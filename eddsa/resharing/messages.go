@@ -21,10 +21,10 @@ import (
 var (
 	// Ensure that signing messages implement ValidateBasic
 	_ = []tss.MessageContent{
-		(*DGRound1Message)(nil),
-		(*DGRound2Message)(nil),
-		(*DGRound3Message1)(nil),
-		(*DGRound3Message2)(nil),
+		(*EDDSADGRound1Message)(nil),
+		(*EDDSADGRound2Message)(nil),
+		(*EDDSADGRound3Message1)(nil),
+		(*EDDSADGRound3Message2)(nil),
 	}
 )
 
@@ -42,7 +42,7 @@ func NewDGRound1Message(
 		IsBroadcast:      true,
 		IsToOldCommittee: false,
 	}
-	content := &DGRound1Message{
+	content := &EDDSADGRound1Message{
 		EddsaPubX:   eddsaPub.X().Bytes(),
 		EddsaPubY:   eddsaPub.Y().Bytes(),
 		VCommitment: vct.Bytes(),
@@ -51,21 +51,21 @@ func NewDGRound1Message(
 	return tss.NewMessage(meta, content, msg)
 }
 
-func (m *DGRound1Message) ValidateBasic() bool {
+func (m *EDDSADGRound1Message) ValidateBasic() bool {
 	return m != nil &&
 		common.NonEmptyBytes(m.EddsaPubX) &&
 		common.NonEmptyBytes(m.EddsaPubY) &&
 		common.NonEmptyBytes(m.VCommitment)
 }
 
-func (m *DGRound1Message) UnmarshalEDDSAPub() (*crypto.ECPoint, error) {
+func (m *EDDSADGRound1Message) UnmarshalEDDSAPub() (*crypto.ECPoint, error) {
 	return crypto.NewECPoint(
 		tss.EC(),
 		new(big.Int).SetBytes(m.EddsaPubX),
 		new(big.Int).SetBytes(m.EddsaPubY))
 }
 
-func (m *DGRound1Message) UnmarshalVCommitment() *big.Int {
+func (m *EDDSADGRound1Message) UnmarshalVCommitment() *big.Int {
 	return new(big.Int).SetBytes(m.GetVCommitment())
 }
 
@@ -81,12 +81,12 @@ func NewDGRound2Message(
 		IsBroadcast:      true,
 		IsToOldCommittee: true,
 	}
-	content := &DGRound2Message{}
+	content := &EDDSADGRound2Message{}
 	msg := tss.NewMessageWrapper(meta, content)
 	return tss.NewMessage(meta, content, msg)
 }
 
-func (m *DGRound2Message) ValidateBasic() bool {
+func (m *EDDSADGRound2Message) ValidateBasic() bool {
 	return true
 }
 
@@ -103,14 +103,14 @@ func NewDGRound3Message1(
 		IsBroadcast:      false,
 		IsToOldCommittee: false,
 	}
-	content := &DGRound3Message1{
+	content := &EDDSADGRound3Message1{
 		Share: share.Share.Bytes(),
 	}
 	msg := tss.NewMessageWrapper(meta, content)
 	return tss.NewMessage(meta, content, msg)
 }
 
-func (m *DGRound3Message1) ValidateBasic() bool {
+func (m *EDDSADGRound3Message1) ValidateBasic() bool {
 	return m != nil &&
 		common.NonEmptyBytes(m.Share)
 }
@@ -129,19 +129,19 @@ func NewDGRound3Message2(
 		IsToOldCommittee: false,
 	}
 	vDctBzs := common.BigIntsToBytes(vdct)
-	content := &DGRound3Message2{
+	content := &EDDSADGRound3Message2{
 		VDecommitment: vDctBzs,
 	}
 	msg := tss.NewMessageWrapper(meta, content)
 	return tss.NewMessage(meta, content, msg)
 }
 
-func (m *DGRound3Message2) ValidateBasic() bool {
+func (m *EDDSADGRound3Message2) ValidateBasic() bool {
 	return m != nil &&
 		common.NonEmptyMultiBytes(m.VDecommitment)
 }
 
-func (m *DGRound3Message2) UnmarshalVDeCommitment() cmt.HashDeCommitment {
+func (m *EDDSADGRound3Message2) UnmarshalVDeCommitment() cmt.HashDeCommitment {
 	deComBzs := m.GetVDecommitment()
 	return cmt.NewHashDeCommitmentFromBytes(deComBzs)
 }
@@ -158,11 +158,11 @@ func NewDGRound4Message(
 		IsBroadcast:             true,
 		IsToOldAndNewCommittees: true,
 	}
-	content := &DGRound4Message{}
+	content := &EDDSADGRound4Message{}
 	msg := tss.NewMessageWrapper(meta, content)
 	return tss.NewMessage(meta, content, msg)
 }
 
-func (m *DGRound4Message) ValidateBasic() bool {
+func (m *EDDSADGRound4Message) ValidateBasic() bool {
 	return true
 }

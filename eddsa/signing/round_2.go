@@ -27,7 +27,7 @@ func (round *round2) Start() *tss.Error {
 
 	// 1. store r1 message pieces
 	for j, msg := range round.temp.signRound1Messages {
-		r1msg := msg.Content().(*SignRound1Message)
+		r1msg := msg.Content().(*EDDSASignRound1Message)
 		round.temp.cjs[j] = r1msg.UnmarshalCommitment()
 	}
 
@@ -46,7 +46,7 @@ func (round *round2) Start() *tss.Error {
 }
 
 func (round *round2) CanAccept(msg tss.ParsedMessage) bool {
-	if _, ok := msg.Content().(*SignRound2Message); ok {
+	if _, ok := msg.Content().(*EDDSASignRound2Message); ok {
 		return msg.IsBroadcast()
 	}
 	return false

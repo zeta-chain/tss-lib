@@ -125,7 +125,7 @@ keygen:
 							continue
 						}
 						vssMsgs := P.temp.kgRound2Message1s
-						share := vssMsgs[j].Content().(*KGRound2Message1).Share
+						share := vssMsgs[j].Content().(*EDDSAKGRound2Message1).Share
 						shareStruct := &vss.Share{
 							Threshold: threshold,
 							ID:        P.PartyID().KeyInt(),

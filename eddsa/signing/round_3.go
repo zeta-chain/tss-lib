@@ -39,7 +39,7 @@ func (round *round3) Start() *tss.Error {
 		}
 
 		msg := round.temp.signRound2Messages[j]
-		r2msg := msg.Content().(*SignRound2Message)
+		r2msg := msg.Content().(*EDDSASignRound2Message)
 		cmtDeCmt := commitments.HashCommitDecommit{C: round.temp.cjs[j], D: r2msg.UnmarshalDeCommitment()}
 		ok, coordinates := cmtDeCmt.DeCommit()
 		if !ok {
@@ -113,7 +113,7 @@ func (round *round3) Update() (bool, *tss.Error) {
 }
 
 func (round *round3) CanAccept(msg tss.ParsedMessage) bool {
-	if _, ok := msg.Content().(*SignRound3Message); ok {
+	if _, ok := msg.Content().(*EDDSASignRound3Message); ok {
 		return msg.IsBroadcast()
 	}
 	return false

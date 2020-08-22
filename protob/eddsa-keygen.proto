@@ -11,21 +11,21 @@ option go_package = "eddsa/keygen";
 /*
  * Represents a BROADCAST message sent during Round 1 of the EDDSA TSS keygen protocol.
  */
-message KGRound1Message {
+message EDDSAKGRound1Message {
     bytes commitment = 1;
 }
 
 /*
  * Represents a P2P message sent to each party during Round 2 of the EDDSA TSS keygen protocol.
  */
-message KGRound2Message1 {
+message EDDSAKGRound2Message1 {
     bytes share = 1;
 }
 
 /*
  * Represents a BROADCAST message sent to each party during Round 2 of the EDDSA TSS keygen protocol.
  */
-message KGRound2Message2 {
+message EDDSAKGRound2Message2 {
     repeated bytes de_commitment = 1;
     bytes proof_alpha_x = 2;
     bytes proof_alpha_y = 3;

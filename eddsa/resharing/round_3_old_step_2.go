@@ -49,10 +49,10 @@ func (round *round3) Start() *tss.Error {
 }
 
 func (round *round3) CanAccept(msg tss.ParsedMessage) bool {
-	if _, ok := msg.Content().(*DGRound3Message1); ok {
+	if _, ok := msg.Content().(*EDDSADGRound3Message1); ok {
 		return !msg.IsBroadcast()
 	}
-	if _, ok := msg.Content().(*DGRound3Message2); ok {
+	if _, ok := msg.Content().(*EDDSADGRound3Message2); ok {
 		return msg.IsBroadcast()
 	}
 	return false

@@ -122,11 +122,11 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 	// switch/case is necessary to store any messages beyond current round
 	// this does not handle message replays. we expect the caller to apply replay and spoofing protection.
 	switch msg.Content().(type) {
-	case *KGRound1Message:
+	case *EDDSAKGRound1Message:
 		p.temp.kgRound1Messages[fromPIdx] = msg
-	case *KGRound2Message1:
+	case *EDDSAKGRound2Message1:
 		p.temp.kgRound2Message1s[fromPIdx] = msg
-	case *KGRound2Message2:
+	case *EDDSAKGRound2Message2:
 		p.temp.kgRound2Message2s[fromPIdx] = msg
 	default: // unrecognised message, just ignore!
 		common.Logger.Warningf("unrecognised message ignored: %v", msg)

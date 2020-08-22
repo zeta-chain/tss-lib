@@ -43,8 +43,8 @@ func (round *round4) Start() *tss.Error {
 	modQ := common.ModInt(tss.EC().Params().N)
 	vjc := make([][]*crypto.ECPoint, len(round.OldParties().IDs()))
 	for j := 0; j <= len(vjc)-1; j++ { // P1..P_t+1. Ps are indexed from 0 here
-		r1msg := round.temp.dgRound1Messages[j].Content().(*DGRound1Message)
-		r3msg2 := round.temp.dgRound3Message2s[j].Content().(*DGRound3Message2)
+		r1msg := round.temp.dgRound1Messages[j].Content().(*EDDSADGRound1Message)
+		r3msg2 := round.temp.dgRound3Message2s[j].Content().(*EDDSADGRound3Message2)
 
 		vCj, vDj := r1msg.UnmarshalVCommitment(), r3msg2.UnmarshalVDeCommitment()
 
@@ -61,7 +61,7 @@ func (round *round4) Start() *tss.Error {
 		}
 		vjc[j] = vj
 
-		r3msg1 := round.temp.dgRound3Message1s[j].Content().(*DGRound3Message1)
+		r3msg1 := round.temp.dgRound3Message1s[j].Content().(*EDDSADGRound3Message1)
 		sharej := &vss.Share{
 			Threshold: round.NewThreshold(),
 			ID:        round.PartyID().KeyInt(),
@@ -128,7 +128,7 @@ func (round *round4) Start() *tss.Error {
 }
 
 func (round *round4) CanAccept(msg tss.ParsedMessage) bool {
-	if _, ok := msg.Content().(*DGRound4Message); ok {
+	if _, ok := msg.Content().(*EDDSADGRound4Message); ok {
 		return msg.IsBroadcast()
 	}
 	return false

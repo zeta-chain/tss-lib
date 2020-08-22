@@ -27,7 +27,7 @@ func (round *round2) Start() *tss.Error {
 
 	// 4. store r1 message pieces
 	for j, msg := range round.temp.kgRound1Messages {
-		r1msg := msg.Content().(*KGRound1Message)
+		r1msg := msg.Content().(*EDDSAKGRound1Message)
 		round.temp.KGCs[j] = r1msg.UnmarshalCommitment()
 	}
 
@@ -59,10 +59,10 @@ func (round *round2) Start() *tss.Error {
 }
 
 func (round *round2) CanAccept(msg tss.ParsedMessage) bool {
-	if _, ok := msg.Content().(*KGRound2Message1); ok {
+	if _, ok := msg.Content().(*EDDSAKGRound2Message1); ok {
 		return !msg.IsBroadcast()
 	}
-	if _, ok := msg.Content().(*KGRound2Message2); ok {
+	if _, ok := msg.Content().(*EDDSAKGRound2Message2); ok {
 		return msg.IsBroadcast()
 	}
 	return false

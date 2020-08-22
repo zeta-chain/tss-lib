@@ -31,7 +31,7 @@ func (round *finalization) Start() *tss.Error {
 		if j == round.PartyID().Index {
 			continue
 		}
-		r3msg := round.temp.signRound3Messages[j].Content().(*SignRound3Message)
+		r3msg := round.temp.signRound3Messages[j].Content().(*EDDSASignRound3Message)
 		sjBytes := bigIntToEncodedBytes(r3msg.UnmarshalS())
 		var tmpSumS [32]byte
 		edwards25519.ScMulAdd(&tmpSumS, sumS, bigIntToEncodedBytes(big.NewInt(1)), sjBytes)

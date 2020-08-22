@@ -23,9 +23,9 @@ import (
 var (
 	// Ensure that keygen messages implement ValidateBasic
 	_ = []tss.MessageContent{
-		(*KGRound1Message)(nil),
-		(*KGRound2Message1)(nil),
-		(*KGRound2Message2)(nil),
+		(*EDDSAKGRound1Message)(nil),
+		(*EDDSAKGRound2Message1)(nil),
+		(*EDDSAKGRound2Message2)(nil),
 	}
 )
 
@@ -36,18 +36,18 @@ func NewKGRound1Message(from *tss.PartyID, ct cmt.HashCommitment) tss.ParsedMess
 		From:        from,
 		IsBroadcast: true,
 	}
-	content := &KGRound1Message{
+	content := &EDDSAKGRound1Message{
 		Commitment: ct.Bytes(),
 	}
 	msg := tss.NewMessageWrapper(meta, content)
 	return tss.NewMessage(meta, content, msg)
 }
 
-func (m *KGRound1Message) ValidateBasic() bool {
+func (m *EDDSAKGRound1Message) ValidateBasic() bool {
 	return m != nil && common.NonEmptyBytes(m.GetCommitment())
 }
 
-func (m *KGRound1Message) UnmarshalCommitment() *big.Int {
+func (m *EDDSAKGRound1Message) UnmarshalCommitment() *big.Int {
 	return new(big.Int).SetBytes(m.GetCommitment())
 }
 
@@ -62,19 +62,19 @@ func NewKGRound2Message1(
 		To:          []*tss.PartyID{to},
 		IsBroadcast: false,
 	}
-	content := &KGRound2Message1{
+	content := &EDDSAKGRound2Message1{
 		Share: share.Share.Bytes(),
 	}
 	msg := tss.NewMessageWrapper(meta, content)
 	return tss.NewMessage(meta, content, msg)
 }
 
-func (m *KGRound2Message1) ValidateBasic() bool {
+func (m *EDDSAKGRound2Message1) ValidateBasic() bool {
 	return m != nil &&
 		common.NonEmptyBytes(m.GetShare())
 }
 
-func (m *KGRound2Message1) UnmarshalShare() *big.Int {
+func (m *EDDSAKGRound2Message1) UnmarshalShare() *big.Int {
 	return new(big.Int).SetBytes(m.Share)
 }
 
@@ -90,7 +90,7 @@ func NewKGRound2Message2(
 		IsBroadcast: true,
 	}
 	dcBzs := common.BigIntsToBytes(deCommitment)
-	content := &KGRound2Message2{
+	content := &EDDSAKGRound2Message2{
 		DeCommitment: dcBzs,
 		ProofAlphaX:  proof.Alpha.X().Bytes(),
 		ProofAlphaY:  proof.Alpha.Y().Bytes(),
@@ -100,17 +100,17 @@ func NewKGRound2Message2(
 	return tss.NewMessage(meta, content, msg)
 }
 
-func (m *KGRound2Message2) ValidateBasic() bool {
+func (m *EDDSAKGRound2Message2) ValidateBasic() bool {
 	return m != nil &&
 		common.NonEmptyMultiBytes(m.GetDeCommitment())
 }
 
-func (m *KGRound2Message2) UnmarshalDeCommitment() []*big.Int {
+func (m *EDDSAKGRound2Message2) UnmarshalDeCommitment() []*big.Int {
 	deComBzs := m.GetDeCommitment()
 	return cmt.NewHashDeCommitmentFromBytes(deComBzs)
 }
 
-func (m *KGRound2Message2) UnmarshalZKProof() (*schnorr.ZKProof, error) {
+func (m *EDDSAKGRound2Message2) UnmarshalZKProof() (*schnorr.ZKProof, error) {
 	point, err := crypto.NewECPoint(
 		tss.EC(),
 		new(big.Int).SetBytes(m.GetProofAlphaX()),

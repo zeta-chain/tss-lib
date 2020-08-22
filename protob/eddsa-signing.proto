@@ -11,14 +11,14 @@ option go_package = "eddsa/signing";
 /*
  * Represents a BROADCAST message sent to all parties during Round 1 of the EDDSA TSS signing protocol.
  */
-message SignRound1Message {
+message EDDSASignRound1Message {
     bytes commitment = 1;
 }
 
 /*
  * Represents a BROADCAST message sent to all parties during Round 2 of the EDDSA TSS signing protocol.
  */
-message SignRound2Message {
+message EDDSASignRound2Message {
     repeated bytes de_commitment = 1;
     bytes proof_alpha_x = 2;
     bytes proof_alpha_y = 3;
@@ -28,6 +28,6 @@ message SignRound2Message {
 /*
  * Represents a BROADCAST message sent to all parties during Round 3 of the EDDSA TSS signing protocol.
  */
-message SignRound3Message {
+message EDDSASignRound3Message {
     bytes s = 1;
 }

@@ -120,7 +120,7 @@ func (p *LocalParty) ValidateMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 	// check that the message's "from index" will fit into the array
 	var maxFromIdx int
 	switch msg.Content().(type) {
-	case *DGRound2Message, *DGRound4Message:
+	case *EDDSADGRound2Message, *EDDSADGRound4Message:
 		maxFromIdx = len(p.params.NewParties().IDs()) - 1
 	default:
 		maxFromIdx = len(p.params.OldParties().IDs()) - 1
@@ -142,15 +142,15 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 	// switch/case is necessary to store any messages beyond current round
 	// this does not handle message replays. we expect the caller to apply replay and spoofing protection.
 	switch msg.Content().(type) {
-	case *DGRound1Message:
+	case *EDDSADGRound1Message:
 		p.temp.dgRound1Messages[fromPIdx] = msg
-	case *DGRound2Message:
+	case *EDDSADGRound2Message:
 		p.temp.dgRound2Messages[fromPIdx] = msg
-	case *DGRound3Message1:
+	case *EDDSADGRound3Message1:
 		p.temp.dgRound3Message1s[fromPIdx] = msg
-	case *DGRound3Message2:
+	case *EDDSADGRound3Message2:
 		p.temp.dgRound3Message2s[fromPIdx] = msg
-	case *DGRound4Message:
+	case *EDDSADGRound4Message:
 		p.temp.dgRound4Messages[fromPIdx] = msg
 	default: // unrecognised message, just ignore!
 		common.Logger.Warningf("unrecognised message ignored: %v", msg)
