@@ -27,11 +27,4 @@ unit_tests:
     - go test  -v -coverprofile=coverage.out ./...
     - go tool cover -func=coverage.out
 
-lint_code:
-  image: golangci/golangci-lint
-  stage: test
-  before_script:
-    - go get mvdan.cc/gofumpt
-  script:
-    - golangci-lint run -v
 
