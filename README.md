@@ -25,6 +25,73 @@ This library includes three protocols:
 
 ⚠️ Do not miss [these important notes](#how-to-use-this-securely) on implementing this library securely
 
+## Tss Blame scheme and Security
+The Thorchain Tss blame scheme is achieved in two aspects, the fist one is called the blame in malicious communication. Thorchain Tss achieves that by
+implementing ([Thorchain go-tss implementation](https://gitlab.com/thorchain/tss/go-tss)) a reliable communication scheme which avoids the malicious nodes send different
+tss shares to different nodes. By asking all the tss shares to be sent with a signature, tss nodes can easily trace the source of the
+incorrect tss shares. By caching the shares, the system avoids the malicious nodes reset the victim's tss status by re-send any valid tss message.
+
+The second aspect is the identifying aborts in Tss cryptographic process which is implemented in this repository.
+
+### Keygen identifying abort
+
+* Since each node share their secret though verifiable secret sharing,
+thus when a node receives an invalid share, it will abort the keygen process and blame the node who sends the invalid share.
+
+* If the attacker attacks the system in the round that related with the zero knowledge proof (e.g., proving that he
+knows the secret x or proving the correctness of the paillier key), the nodes will also blame that attacker.
+
+### Keysign identifying abort
+
+#### keysign steps in high level
+
+1. nodes randomly select their local <img src="https://latex.codecogs.com/svg.latex?\small&space;x_i"/>,<img src="https://latex.codecogs.com/svg.latex?\small&space;\gamma_i"/> and calcualte the commitment of <img src="https://latex.codecogs.com/svg.latex?\small&space;g^\gamma_i"/>.
+
+2. nodes involve in the **MtA** and **MtAwc** to calculate the node's local share of <img src="https://latex.codecogs.com/svg.latex?\small&space;kx"/> and <img src="https://latex.codecogs.com/svg.latex?\small&space;k\gamma"/>.
+
+3. nodes reconstruct the <img src="https://latex.codecogs.com/svg.latex?\small&space;k\gamma"/>, and proof that he holds
+the share <img src="https://latex.codecogs.com/svg.latex?\small&space;kw"/>.
+
+4. nodes calculate the <img src="https://latex.codecogs.com/svg.latex?\small&space;R"/>.
+
+5. by exchange the <img src="https://latex.codecogs.com/svg.latex?\small&space;R^{k_i}"/>, nodes can check the correctness of
+<img src="https://latex.codecogs.com/svg.latex?\small&space;R^k_i"/>. Nodes also prove the consistency between 
+the value <img src="https://latex.codecogs.com/svg.latex?\small&space;R_i"/> and <img src="https://latex.codecogs.com/svg.latex?\small&space;k_i"/>,
+and check <img src="https://latex.codecogs.com/svg.latex?\small&space;g \stackrel{?}{=}\prod \overline{R}_{i}"/>. 
+
+6. similar to step 5, nodes exchanges the  <img src="https://latex.codecogs.com/svg.latex?\small&space; S_i"/> and prove the consistency
+between <img src="https://latex.codecogs.com/svg.latex?\small&space;S_i=R^{k_ix_i}"/> and <img src="https://latex.codecogs.com/svg.latex?\small&space;T_i"/> where
+<img src="https://latex.codecogs.com/svg.latex?\small&space;T_i"/> is a security auxiliary, and check <img src="https://latex.codecogs.com/svg.latex?\small&space;y \stackrel{?}{=}\prod {S}_{i}"/>. 
+
+7. nodes broadcast the <img src="https://latex.codecogs.com/svg.latex?\small&space;s_i"/> which is the share of the signature <img src="https://latex.codecogs.com/svg.latex?\small&space;s"/>
+and generate the signature <img src="https://latex.codecogs.com/svg.latex?\small&space;<R,S>"/> to the message <img src="https://latex.codecogs.com/svg.latex?\small&space;m"/>.
+
+#### identifying abort supports in this repository
+* Our Tss library can identify the malicious nodes and aborts the processing when the invalid message is received
+in step 2,3 as the broadcast proof sent from the malicious nodes do not match with the message it claims later.
+
+* For the invalid signature in the step 7, if the keysign pass the steps 5,6, nodes can check if <img src="https://latex.codecogs.com/svg.latex?\small&space;R^{s_i}=\overline{R}_i^m \cdot S_i^r"/> where <img src="https://latex.codecogs.com/svg.latex?\small&space;\overline{R}_i=R^{k_i}"/>.
+to figure out the culprits.
+
+* Our Tss lib can also identify the culprits if tss fail in  <img src="https://latex.codecogs.com/svg.latex?\small&space;g \stackrel{?}{=}\prod \overline{R}_{i}"/> or
+<img src="https://latex.codecogs.com/svg.latex?\small&space;y \stackrel{?}{=}\prod {S}_{i}"/>.
+
+    For the Tss algorithm, it is safe to publish the nodes' <img src="https://latex.codecogs.com/svg.latex?\small&space;k_i"/> **if node dos not send its signature share <img src="https://latex.codecogs.com/svg.latex?\small&space;s_i"/> to the public if they fail in keysign**, thus,
+nodes can exchange their ephemeral value <img src="https://latex.codecogs.com/svg.latex?\small&space;k_i,\gamma_i"/> to figure out the malicious nodes who fail the check <img src="https://latex.codecogs.com/svg.latex?\small&space;g \stackrel{?}{=}\prod \overline{R}_{i}"/>.
+
+    To figure out who fails the check <img src="https://latex.codecogs.com/svg.latex?\small&space;y \stackrel{?}{=}\prod {S}_{i}"/>,
+nodes just need to broadcast their first part of the **MtA** result. Since all the peers can only get the ephemeral value <img src="https://latex.codecogs.com/svg.latex?\small&space;k_i,\gamma_i"/>
+while not the signature part <img src="https://latex.codecogs.com/svg.latex?\small&space;s_i"/>, no one can
+recover the secret key share of any nodes.
+
+
+
+
+
+
+ 
+
+
 ## Rationale
 ECDSA is used extensively for crypto-currencies such as Bitcoin, Ethereum (secp256k1 curve), NEO (NIST P-256 curve) and many more. 
 
