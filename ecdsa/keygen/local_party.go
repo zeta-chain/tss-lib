@@ -13,14 +13,17 @@ import (
 
 	"github.com/binance-chain/tss-lib/common"
 	cmt "github.com/binance-chain/tss-lib/crypto/commitments"
+	"github.com/binance-chain/tss-lib/crypto/paillier"
 	"github.com/binance-chain/tss-lib/crypto/vss"
 	"github.com/binance-chain/tss-lib/tss"
 )
 
 // Implements Party
 // Implements Stringer
-var _ tss.Party = (*LocalParty)(nil)
-var _ fmt.Stringer = (*LocalParty)(nil)
+var (
+	_ tss.Party    = (*LocalParty)(nil)
+	_ fmt.Stringer = (*LocalParty)(nil)
+)
 
 type (
 	LocalParty struct {
@@ -41,6 +44,8 @@ type (
 		kgRound2Message2s,
 		kgRound3Messages []tss.ParsedMessage
 	}
+	// we define the struct that we received the encrypted share
+	recvEncryptedShare [][]byte
 
 	localTempData struct {
 		localMessageStore
@@ -51,6 +56,13 @@ type (
 		vs            vss.Vs
 		shares        vss.Shares
 		deCommitPolyG cmt.HashDeCommitment
+		// round2 encrypted share for sending
+		broadcastEncryptedShare [][]byte
+		// the encryptedShares for all the peers
+		encryptedShares []paillier.EncryptedMsg
+		// the received encryptedshare
+		recvEncryptedShares []recvEncryptedShare
+		vssAbortData        KGRound3Message_AbortData
 	}
 )
 

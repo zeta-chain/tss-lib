@@ -33,11 +33,29 @@ message KGRound2Message1 {
  */
 message KGRound2Message2 {
     repeated bytes de_commitment = 1;
+    repeated bytes encryptedShare = 2;
 }
 
 /*
  * Represents a BROADCAST message sent to each party during Round 3 of the ECDSA TSS keygen protocol.
  */
 message KGRound3Message {
-    repeated bytes paillier_proof = 1;
+    message SuccessData {
+        repeated bytes paillier_proof = 1;
+    }
+    message AbortDataEntry{
+        // index of the malicious node
+        int32 index=1;
+        // vss share itself
+        bytes share_m = 2;
+        // auxiliary r of paillier encryption
+        bytes share_x = 3;
+    }
+    message AbortData {
+        repeated AbortDataEntry item = 2;
+    }
+    oneof content {
+        SuccessData success = 1;
+        AbortData abort = 2;
+    }
 }

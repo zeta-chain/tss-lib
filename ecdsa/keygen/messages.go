@@ -19,15 +19,8 @@ import (
 
 // These messages were generated from Protocol Buffers definitions into ecdsa-keygen.pb.go
 
-var (
-	// Ensure that keygen messages implement ValidateBasic
-	_ = []tss.MessageContent{
-		(*KGRound1Message)(nil),
-		(*KGRound2Message1)(nil),
-		(*KGRound2Message2)(nil),
-		(*KGRound3Message)(nil),
-	}
-)
+// Ensure that keygen messages implement ValidateBasic
+var _ = []tss.MessageContent{(*KGRound1Message)(nil), (*KGRound2Message1)(nil), (*KGRound2Message2)(nil), (*KGRound3Message)(nil)}
 
 // ----- //
 
@@ -135,6 +128,7 @@ func (m *KGRound2Message1) UnmarshalShare() *big.Int {
 func NewKGRound2Message2(
 	from *tss.PartyID,
 	deCommitment cmt.HashDeCommitment,
+	encryptedShares [][]byte,
 ) tss.ParsedMessage {
 	meta := tss.MessageRouting{
 		From:        from,
@@ -142,7 +136,8 @@ func NewKGRound2Message2(
 	}
 	dcBzs := common.BigIntsToBytes(deCommitment)
 	content := &KGRound2Message2{
-		DeCommitment: dcBzs,
+		DeCommitment:   dcBzs,
+		EncryptedShare: encryptedShares,
 	}
 	msg := tss.NewMessageWrapper(meta, content)
 	return tss.NewMessage(meta, content, msg)
@@ -160,7 +155,7 @@ func (m *KGRound2Message2) UnmarshalDeCommitment() []*big.Int {
 
 // ----- //
 
-func NewKGRound3Message(
+func NewKGRound3MessageSuccessful(
 	from *tss.PartyID,
 	proof paillier.Proof,
 ) tss.ParsedMessage {
@@ -175,21 +170,57 @@ func NewKGRound3Message(
 		}
 		pfBzs[i] = proof[i].Bytes()
 	}
+
 	content := &KGRound3Message{
-		PaillierProof: pfBzs,
+		Content: &KGRound3Message_Success{
+			Success: &KGRound3Message_SuccessData{
+				PaillierProof: pfBzs,
+			},
+		},
+	}
+
+	msg := tss.NewMessageWrapper(meta, content)
+	return tss.NewMessage(meta, content, msg)
+}
+
+func NewKGRound3MessageAbort(
+	from *tss.PartyID,
+	data *KGRound3Message_AbortData,
+
+) tss.ParsedMessage {
+	meta := tss.MessageRouting{
+		From:        from,
+		IsBroadcast: true,
+	}
+	content := &KGRound3Message{
+		Content: &KGRound3Message_Abort{Abort: data},
 	}
 	msg := tss.NewMessageWrapper(meta, content)
 	return tss.NewMessage(meta, content, msg)
 }
 
 func (m *KGRound3Message) ValidateBasic() bool {
-	return m != nil &&
-		common.NonEmptyMultiBytes(m.GetPaillierProof(), paillier.ProofIters)
+	if m == nil || m.GetContent() == nil {
+		return false
+	}
+	switch c := m.GetContent().(type) {
+	case *KGRound3Message_Success:
+		return (c.Success != nil) && common.NonEmptyMultiBytes(c.Success.GetPaillierProof(), paillier.ProofIters)
+
+	case *KGRound3Message_Abort:
+		return (c.Abort != nil) && len(c.Abort.Item) != 0
+	default:
+		return false
+	}
 }
 
 func (m *KGRound3Message) UnmarshalProofInts() paillier.Proof {
 	var pf paillier.Proof
-	proofBzs := m.GetPaillierProof()
+	c, ok := m.GetContent().(*KGRound3Message_Success)
+	if !ok {
+		return pf
+	}
+	proofBzs := c.Success.GetPaillierProof()
 	for i := range pf {
 		pf[i] = new(big.Int).SetBytes(proofBzs[i])
 	}
