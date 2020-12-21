@@ -22,16 +22,9 @@ message KGRound1Message {
 }
 
 /*
- * Represents a P2P message sent to each party during Round 2 of the ECDSA TSS keygen protocol.
- */
-message KGRound2Message1 {
-    bytes share = 1;
-}
-
-/*
  * Represents a BROADCAST message sent to each party during Round 2 of the ECDSA TSS keygen protocol.
  */
-message KGRound2Message2 {
+message KGRound2Message {
     repeated bytes de_commitment = 1;
     repeated bytes encryptedShare = 2;
 }

@@ -65,8 +65,8 @@ func (round *round3) Start() *tss.Error {
 		go func(j int, ch chan<- vssOut) {
 			// 4-9.
 			KGCj := round.temp.KGCs[j]
-			r2msg2 := round.temp.kgRound2Message2s[j].Content().(*KGRound2Message2)
-			KGDj := r2msg2.UnmarshalDeCommitment()
+			r2msg := round.temp.kgRound2Message2s[j].Content().(*KGRound2Message)
+			KGDj := r2msg.UnmarshalDeCommitment()
 			cmtDeCmt := commitments.HashCommitDecommit{C: KGCj, D: KGDj}
 			ok, flatPolyGs := cmtDeCmt.DeCommit()
 			if !ok || flatPolyGs == nil {
@@ -78,8 +78,8 @@ func (round *round3) Start() *tss.Error {
 				ch <- vssOut{err, nil}
 				return
 			}
-			encryptedShare := new(big.Int).SetBytes(r2msg2.EncryptedShare[round.PartyID().Index])
-			round.temp.recvEncryptedShares[j] = r2msg2.EncryptedShare
+			encryptedShare := new(big.Int).SetBytes(r2msg.EncryptedShare[round.PartyID().Index])
+			round.temp.recvEncryptedShares[j] = r2msg.EncryptedShare
 			m, x, err := round.save.PaillierSK.DecryptAndRecoverRandomness(encryptedShare)
 			if err != nil {
 				common.Logger.Errorf("invalid paillier encrypted keys from index:%d with error %s", j, err.Error())

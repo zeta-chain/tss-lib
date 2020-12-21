@@ -251,27 +251,13 @@ keygen:
 				u := new(big.Int)
 				for j, Pj := range parties {
 					pShares := make(vss.Shares, 0)
-					// 	for j2, P := range parties {
-					// 		if j2 == j {
-					// 			continue
-					// 		}
-					// 		vssMsgs := P.temp.kgRound2Message1s
-					// 		share := vssMsgs[j].Content().(*KGRound2Message1).Share
-					// 		shareStruct := &vss.Share{
-					// 			Threshold: threshold,
-					// 			ID:        P.PartyID().KeyInt(),
-					// 			Share:     new(big.Int).SetBytes(share),
-					// 		}
-					// 		pShares = append(pShares, shareStruct)
-					// 	}
-
 					for j2, P := range parties {
 						if j2 == j {
 							continue
 						}
 
 						vssMsgs := P.temp.kgRound2Message2s
-						share := vssMsgs[j].Content().(*KGRound2Message2).EncryptedShare
+						share := vssMsgs[j].Content().(*KGRound2Message).EncryptedShare
 						encryptedForMe := new(big.Int).SetBytes(share[j2])
 						e, _, _ := P.data.PaillierSK.DecryptAndRecoverRandomness(encryptedForMe)
 
@@ -416,9 +402,9 @@ keygen:
 			dest := msg.GetTo()
 			if dest == nil { // broadcast!
 
-				if msg.Type() == "KGRound2Message2" && msg.GetFrom().Index == attacker {
+				if msg.Type() == "KGRound2Message" && msg.GetFrom().Index == attacker {
 					assert.Nil(t, err)
-					var attackContent KGRound2Message2
+					var attackContent KGRound2Message
 					err = ptypes.UnmarshalAny(msg.WireMsg().Message, &attackContent)
 					assert.Nil(t, err)
 					// we tries to attack node 1 as we change the secrete share of node 1
@@ -518,9 +504,9 @@ keygen:
 			dest := msg.GetTo()
 			if dest == nil { // broadcast!
 
-				if msg.Type() == "KGRound2Message2" && (msg.GetFrom().Index == attackers[0] || msg.GetFrom().Index == attackers[1]) {
+				if msg.Type() == "KGRound2Message" && (msg.GetFrom().Index == attackers[0] || msg.GetFrom().Index == attackers[1]) {
 					assert.Nil(t, err)
-					var attackContent KGRound2Message2
+					var attackContent KGRound2Message
 					err = ptypes.UnmarshalAny(msg.WireMsg().Message, &attackContent)
 					assert.Nil(t, err)
 					// we tries to attack node 1 as we change the secrete share of node 1
