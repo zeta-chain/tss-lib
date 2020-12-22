@@ -65,7 +65,7 @@ func (round *round3) Start() *tss.Error {
 		go func(j int, ch chan<- vssOut) {
 			// 4-9.
 			KGCj := round.temp.KGCs[j]
-			r2msg := round.temp.kgRound2Message2s[j].Content().(*KGRound2Message)
+			r2msg := round.temp.kgRound2Messages[j].Content().(*KGRound2Message)
 			KGDj := r2msg.UnmarshalDeCommitment()
 			cmtDeCmt := commitments.HashCommitDecommit{C: KGCj, D: KGDj}
 			ok, flatPolyGs := cmtDeCmt.DeCommit()

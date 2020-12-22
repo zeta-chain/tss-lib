@@ -110,7 +110,7 @@ func (round *round2) Start() *tss.Error {
 
 	// 7. BROADCAST de-commitments of Shamir poly*G
 	r2msg := NewKGRound2Message(round.PartyID(), round.temp.deCommitPolyG, round.temp.broadcastEncryptedShare)
-	round.temp.kgRound2Message2s[i] = r2msg
+	round.temp.kgRound2Messages[i] = r2msg
 	round.out <- r2msg
 
 	return nil
@@ -124,7 +124,7 @@ func (round *round2) CanAccept(msg tss.ParsedMessage) bool {
 }
 
 func (round *round2) Update() (bool, *tss.Error) {
-	for j, msg := range round.temp.kgRound2Message2s {
+	for j, msg := range round.temp.kgRound2Messages {
 		if round.ok[j] {
 			continue
 		}

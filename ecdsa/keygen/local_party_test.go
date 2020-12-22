@@ -256,7 +256,7 @@ keygen:
 							continue
 						}
 
-						vssMsgs := P.temp.kgRound2Message2s
+						vssMsgs := P.temp.kgRound2Messages
 						share := vssMsgs[j].Content().(*KGRound2Message).EncryptedShare
 						encryptedForMe := new(big.Int).SetBytes(share[j2])
 						e, _, _ := P.data.PaillierSK.DecryptAndRecoverRandomness(encryptedForMe)
@@ -390,7 +390,7 @@ keygen:
 		select {
 		case err := <-errCh:
 			if err.Victim().Index != attacker {
-				assert.Equal(t, pIDs[attacker].Index, err.Culprits()[0].Index, "victim should report all the attacker")
+				assert.Equal(t, attacker, err.Culprits()[0].Index, "victim should report all the attacker")
 			}
 			atomic.AddInt32(&ended, 1)
 			if atomic.LoadInt32(&ended) == int32(len(pIDs)) {

@@ -32,8 +32,6 @@ func (round *round4) findCulprits(j int, abortItems []*KGRound3Message_AbortData
 				continue
 			}
 		}
-
-		// fixme if ShareX and ShareR is nil
 		m := new(big.Int).SetBytes(el.ShareM)
 		r := new(big.Int).SetBytes(el.ShareX)
 		// the reported value from the "victim"
