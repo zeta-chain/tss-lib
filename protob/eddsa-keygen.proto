@@ -31,4 +31,5 @@ message KGRound2Message2 {
     repeated bytes de_commitment = 1;
     ECPoint proof_alpha = 2;
     bytes proof_t = 3;
+    bytes v = 4;
 }

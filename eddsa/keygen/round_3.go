@@ -30,7 +30,8 @@ func (round *round3) Start() *tss.Error {
 
 	Ps := round.Parties().IDs()
 	PIdx := round.PartyID().Index
-
+	vShares := make([]*big.Int, len(Ps))
+	vShares[PIdx] = round.temp.vi
 	// 1,10. calculate xi
 	xi := new(big.Int).Set(round.temp.shares[PIdx].Share)
 	for j := range Ps {
@@ -105,6 +106,7 @@ func (round *round3) Start() *tss.Error {
 				ch <- vssOut{errors.New("vss verify failed"), nil}
 				return
 			}
+			vShares[j] = new(big.Int).SetBytes(r2msg2.V)
 			// (9) handled above
 			ch <- vssOut{nil, PjVs}
 		}(j, chs[j])
@@ -154,6 +156,22 @@ func (round *round3) Start() *tss.Error {
 		if len(culprits) > 0 {
 			return round.WrapError(errors.New("adding PjVs[c] to Vc[c] resulted in a point not on the curve"), culprits...)
 		}
+	}
+
+	tmp := big.NewInt(1)
+	for _, el := range vShares {
+		tmp = new(big.Int).Add(tmp, el)
+	}
+	sk := new(big.Int).Mod(tmp, tss.EC().Params().N)
+
+	x, y := tss.EC().ScalarBaseMult(sk.Bytes())
+	viewPk, err := crypto.NewECPoint(tss.EC(), x, y)
+	if err != nil {
+		return round.WrapError(errors2.Wrapf(err, "public key is not on the curve"))
+	}
+	round.save.ViewKey = ViewKey{
+		sk,
+		viewPk,
 	}
 
 	// 13-17. compute Xj for each Pj

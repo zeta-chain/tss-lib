@@ -19,8 +19,10 @@ import (
 
 // Implements Party
 // Implements Stringer
-var _ tss.Party = (*LocalParty)(nil)
-var _ fmt.Stringer = (*LocalParty)(nil)
+var (
+	_ tss.Party    = (*LocalParty)(nil)
+	_ fmt.Stringer = (*LocalParty)(nil)
+)
 
 type (
 	LocalParty struct {
@@ -46,7 +48,9 @@ type (
 		localMessageStore
 
 		// temp data (thrown away after keygen)
-		ui            *big.Int // used for tests
+		ui *big.Int // used for tests
+		// temp data for the view key shares
+		vi            *big.Int
 		KGCs          []cmt.HashCommitment
 		vs            vss.Vs
 		shares        vss.Shares

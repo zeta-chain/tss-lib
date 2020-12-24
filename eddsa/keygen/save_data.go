@@ -16,6 +16,11 @@ import (
 )
 
 type (
+	ViewKey struct {
+		Sk *big.Int
+		Pk *crypto.ECPoint
+	}
+
 	LocalSecrets struct {
 		// secret fields (not shared, but stored locally)
 		Xi, ShareID *big.Int // xi, kj
@@ -33,6 +38,9 @@ type (
 
 		// the EdDSA public key
 		EDDSAPub *crypto.ECPoint // y
+
+		// the stored viewKey
+		ViewKey
 	}
 )
 

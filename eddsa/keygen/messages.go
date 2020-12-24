@@ -19,14 +19,8 @@ import (
 
 // These messages were generated from Protocol Buffers definitions into eddsa-keygen.pb.go
 
-var (
-	// Ensure that keygen messages implement ValidateBasic
-	_ = []tss.MessageContent{
-		(*KGRound1Message)(nil),
-		(*KGRound2Message1)(nil),
-		(*KGRound2Message2)(nil),
-	}
-)
+// Ensure that keygen messages implement ValidateBasic
+var _ = []tss.MessageContent{(*KGRound1Message)(nil), (*KGRound2Message1)(nil), (*KGRound2Message2)(nil)}
 
 // ----- //
 
@@ -83,6 +77,7 @@ func NewKGRound2Message2(
 	from *tss.PartyID,
 	deCommitment cmt.HashDeCommitment,
 	proof *zkp.DLogProof,
+	vi *big.Int,
 ) tss.ParsedMessage {
 	meta := tss.MessageRouting{
 		From:        from,
@@ -93,6 +88,7 @@ func NewKGRound2Message2(
 		DeCommitment: dcBzs,
 		ProofAlpha:   proof.Alpha.ToProtobufPoint(),
 		ProofT:       proof.T.Bytes(),
+		V:            vi.Bytes(),
 	}
 	msg := tss.NewMessageWrapper(meta, content)
 	return tss.NewMessage(meta, content, msg)
