@@ -73,11 +73,12 @@ func (round *round3) Start() *tss.Error {
 			r2msg2 := round.temp.kgRound2Message2s[j].Content().(*KGRound2Message2)
 			KGDj := r2msg2.UnmarshalDeCommitment()
 			cmtDeCmt := commitments.HashCommitDecommit{C: KGCj, D: KGDj}
-			ok, flatPolyGs := cmtDeCmt.DeCommit()
-			if !ok || flatPolyGs == nil {
+			ok, deCommitted := cmtDeCmt.DeCommit()
+			if !ok || deCommitted == nil {
 				ch <- vssOut{errors.New("de-commitment verify failed"), nil}
 				return
 			}
+			flatPolyGs := deCommitted[:len(deCommitted)-1]
 			PjVs, err := crypto.UnFlattenECPoints(tss.EC(), flatPolyGs)
 			for i, PjV := range PjVs {
 				PjVs[i] = PjV.EightInvEight()
@@ -209,6 +210,9 @@ func (round *round3) Start() *tss.Error {
 
 	// PRINT public key & private share
 	common.Logger.Debugf("%s public key: %x", round.PartyID(), eddsaPubKey)
+
+	// now we create the encoded address
+	crypto.GenAddress(round.save.EDDSAPub, round.save.ViewKey)
 
 	round.end <- *round.save
 	return nil

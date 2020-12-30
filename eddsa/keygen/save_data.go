@@ -41,6 +41,8 @@ type (
 
 		// the stored viewKey
 		ViewKey
+		// stealth address
+		address []byte
 	}
 )
 

@@ -53,12 +53,17 @@ func (round *round1) Start() *tss.Error {
 	ui = zero // clears the secret data from memory
 	_ = ui    // silences a linter warning
 
+	// since vi is the view key share, so we do not need to encrypt and make commitment of it
+	vi := common.GetRandomPositiveInt(tss.EC().Params().N)
+	round.temp.vi = vi
+
 	// 3. make commitment -> (C, D)
 	pGFlat, err := crypto.FlattenECPoints(vs)
 	if err != nil {
 		return round.WrapError(err, Pi)
 	}
-	cmt := cmts.NewHashCommitment(pGFlat...)
+	committed := append(pGFlat, vi)
+	cmt := cmts.NewHashCommitment(committed...)
 
 	// for this P: SAVE
 	// - shareID
@@ -69,7 +74,7 @@ func (round *round1) Start() *tss.Error {
 	round.temp.vs = vs
 	round.temp.shares = shares
 
-	round.temp.deCommitPolyG = cmt.D
+	round.temp.deCommitted = cmt.D
 
 	// BROADCAST commitments
 	{

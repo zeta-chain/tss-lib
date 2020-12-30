@@ -11,7 +11,6 @@ import (
 
 	errors2 "github.com/pkg/errors"
 
-	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto/zkp"
 	"github.com/binance-chain/tss-lib/tss"
 )
@@ -25,9 +24,6 @@ func (round *round2) Start() *tss.Error {
 	round.resetOK()
 
 	i := round.PartyID().Index
-	// since vi is the view key share, so we do not need to encrypt and make commitment of it
-	vi := common.GetRandomPositiveInt(tss.EC().Params().N)
-	round.temp.vi = vi
 	// 4. store r1 message pieces
 	for j, msg := range round.temp.kgRound1Messages {
 		r1msg := msg.Content().(*KGRound1Message)
@@ -54,7 +50,9 @@ func (round *round2) Start() *tss.Error {
 	}
 
 	// 5. BROADCAST de-commitments of Shamir poly*G and Schnorr prove
-	r2msg2 := NewKGRound2Message2(round.PartyID(), round.temp.deCommitPolyG, pii, vi)
+	// polyGPos := len(round.temp.deCommitPolyG) - 1
+	deCommitPolyG := round.temp.deCommitted
+	r2msg2 := NewKGRound2Message2(round.PartyID(), deCommitPolyG, pii, round.temp.vi)
 	round.temp.kgRound2Message2s[i] = r2msg2
 	round.out <- r2msg2
 

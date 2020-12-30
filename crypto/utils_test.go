@@ -13,7 +13,11 @@ import (
 	"testing"
 
 	"github.com/btcsuite/btcd/btcec"
+	"github.com/decred/dcrd/dcrec/edwards/v2"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/binance-chain/tss-lib/common"
+	"github.com/binance-chain/tss-lib/tss"
 )
 
 var (
@@ -93,4 +97,18 @@ func TestECBasePoint2(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGenerateAddressAndImport(t *testing.T) {
+	cv := edwards.Edwards()
+
+	ui := common.GetRandomPositiveInt(tss.EC().Params().N)
+	px, py := cv.ScalarBaseMult(ui.Bytes())
+	pubSignKey := NewECPointNoCurveCheck(edwards.Edwards(), px, py)
+
+	ui = common.GetRandomPositiveInt(tss.EC().Params().N)
+	px, py = cv.ScalarBaseMult(ui.Bytes())
+	pubViewKey := NewECPointNoCurveCheck(edwards.Edwards(), px, py)
+	address := GenAddress(pubSignKey, pubViewKey)
+	RecoverPubKeys(address)
 }

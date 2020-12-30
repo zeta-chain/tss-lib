@@ -50,11 +50,11 @@ type (
 		// temp data (thrown away after keygen)
 		ui *big.Int // used for tests
 		// temp data for the view key shares
-		vi            *big.Int
-		KGCs          []cmt.HashCommitment
-		vs            vss.Vs
-		shares        vss.Shares
-		deCommitPolyG cmt.HashDeCommitment
+		vi          *big.Int
+		KGCs        []cmt.HashCommitment
+		vs          vss.Vs
+		shares      vss.Shares
+		deCommitted cmt.HashDeCommitment
 	}
 )
 
