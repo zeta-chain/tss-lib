@@ -18,14 +18,16 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/binance-chain/tss-lib/common"
+	"github.com/binance-chain/tss-lib/crypto"
 	"github.com/binance-chain/tss-lib/eddsa/keygen"
 	"github.com/binance-chain/tss-lib/test"
 	"github.com/binance-chain/tss-lib/tss"
 )
 
 const (
-	testParticipants = test.TestParticipants
-	testThreshold    = test.TestThreshold
+	testParticipants   = test.TestParticipants
+	testThreshold      = test.TestThreshold
+	testReceiptAddress = "BBpCVUCH9uh4d4Skn9qJDcSPz1AtNDJDSedJ9z55HR6pZU5wwYaRtCPQuCGSQUNiQVw42bmDusXCmVX2rF1XDd5HwG2JBC"
 )
 
 func setUp(level string) {
@@ -62,8 +64,7 @@ func TestE2EConcurrent(t *testing.T) {
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
 		params := tss.NewParameters(p2pCtx, signPIDs[i], len(signPIDs), threshold)
-
-		P := NewLocalParty(msg, params, keys[i], outCh, endCh).(*LocalParty)
+		P := NewLocalParty(msg, testReceiptAddress, params, keys[i], outCh, endCh).(*LocalParty)
 		parties = append(parties, P)
 		go func(P *LocalParty) {
 			if err := P.Start(); err != nil {
@@ -111,10 +112,10 @@ signing:
 					}
 
 					var tmpSumS [32]byte
-					edwards25519.ScMulAdd(&tmpSumS, sumS, bigIntToEncodedBytes(big.NewInt(1)), p.temp.si)
+					edwards25519.ScMulAdd(&tmpSumS, sumS, crypto.BigIntToEncodedBytes(big.NewInt(1)), p.temp.si)
 					sumS = &tmpSumS
 				}
-				fmt.Printf("S: %s\n", encodedBytesToBigInt(sumS).String())
+				fmt.Printf("S: %s\n", crypto.EncodedBytesToBigInt(sumS).String())
 				fmt.Printf("R: %s\n", R.String())
 				// END check s correctness
 

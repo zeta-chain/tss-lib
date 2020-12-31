@@ -212,8 +212,8 @@ func (round *round3) Start() *tss.Error {
 	common.Logger.Debugf("%s public key: %x", round.PartyID(), eddsaPubKey)
 
 	// now we create the encoded address
-	crypto.GenAddress(round.save.EDDSAPub, round.save.ViewKey)
-
+	stealthAddress := crypto.GenAddress(round.save.EDDSAPub, round.save.ViewKey.Pk)
+	round.save.StealthAddress = stealthAddress
 	round.end <- *round.save
 	return nil
 }

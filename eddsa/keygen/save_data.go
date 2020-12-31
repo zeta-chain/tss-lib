@@ -40,9 +40,9 @@ type (
 		EDDSAPub *crypto.ECPoint // y
 
 		// the stored viewKey
-		ViewKey
+		ViewKey ViewKey
 		// stealth address
-		address []byte
+		StealthAddress string
 	}
 )
 
@@ -61,6 +61,7 @@ func BuildLocalSaveDataSubset(sourceData LocalPartySaveData, sortedIDs tss.Sorte
 	newData := NewLocalPartySaveData(sortedIDs.Len())
 	newData.LocalSecrets = sourceData.LocalSecrets
 	newData.EDDSAPub = sourceData.EDDSAPub
+	newData.ViewKey = sourceData.ViewKey
 	for j, id := range sortedIDs {
 		savedIdx, ok := keysToIndices[hex.EncodeToString(id.Key)]
 		if !ok {

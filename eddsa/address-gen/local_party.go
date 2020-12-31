@@ -59,11 +59,10 @@ type (
 // Exported, used in `tss` client
 func NewLocalParty(
 	params *tss.Parameters,
-	pubViewKey *crypto.ECPoint,
-	pubSignKey *crypto.ECPoint,
+	address string,
 	out chan<- tss.Message,
 	end chan<- LocalPartySaveData,
-) tss.Party {
+) (tss.Party, error) {
 	partyCount := params.PartyCount()
 	data := NewLocalPartySaveData(partyCount)
 	p := &LocalParty{
@@ -74,6 +73,20 @@ func NewLocalParty(
 		out:       out,
 		end:       end,
 	}
+
+	signKey, viewKey, err := crypto.RecoverPubKeys(address)
+	if err != nil {
+		return nil, fmt.Errorf("invalid stealth address with error %v\n", err)
+	}
+	pubSignKey, err := crypto.DecodeGroupElementToECPoints(*signKey)
+	if err != nil {
+		return nil, fmt.Errorf("invalid stealth address with error %v", err)
+	}
+	pubViewKey, err := crypto.DecodeGroupElementToECPoints(*viewKey)
+	if err != nil {
+		return nil, fmt.Errorf("invalid stealth address with error %v\n", err)
+	}
+
 	p.temp.pubSignKey = pubSignKey
 	p.temp.pubViewKey = pubViewKey
 	// msgs init
@@ -81,7 +94,7 @@ func NewLocalParty(
 	p.temp.adrRound2Messages = make([]tss.ParsedMessage, partyCount)
 	// temp data init
 	p.temp.AdrCs = make([]cmt.HashCommitment, partyCount)
-	return p
+	return p, nil
 }
 
 func (p *LocalParty) FirstRound() tss.Round {

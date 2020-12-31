@@ -20,8 +20,10 @@ import (
 
 // Implements Party
 // Implements Stringer
-var _ tss.Party = (*LocalParty)(nil)
-var _ fmt.Stringer = (*LocalParty)(nil)
+var (
+	_ tss.Party    = (*LocalParty)(nil)
+	_ fmt.Stringer = (*LocalParty)(nil)
+)
 
 type (
 	LocalParty struct {
@@ -50,8 +52,9 @@ type (
 		wi,
 		m,
 		ri *big.Int
-		pointRi  *crypto.ECPoint
-		deCommit cmt.HashDeCommitment
+		receiptAddress string
+		pointRi        *crypto.ECPoint
+		deCommit       cmt.HashDeCommitment
 
 		// round 2
 		cjs []*big.Int
@@ -64,6 +67,7 @@ type (
 
 func NewLocalParty(
 	msg *big.Int,
+	receiptAddress string,
 	params *tss.Parameters,
 	key keygen.LocalPartySaveData,
 	out chan<- tss.Message,
@@ -86,6 +90,7 @@ func NewLocalParty(
 
 	// temp data init
 	p.temp.m = msg
+	p.temp.receiptAddress = receiptAddress
 	p.temp.cjs = make([]*big.Int, partyCount)
 	return p
 }

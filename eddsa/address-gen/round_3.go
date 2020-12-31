@@ -7,8 +7,8 @@
 package address_gen
 
 import (
-	"crypto/sha512"
 	"errors"
+	"fmt"
 	"math/big"
 
 	"github.com/hashicorp/go-multierror"
@@ -103,19 +103,19 @@ func (round *round3) Start() *tss.Error {
 
 	// P=H(r*A)G+B
 	hx, hy := tss.EC().ScalarMult(round.temp.pubViewKey.X(), round.temp.pubViewKey.Y(), R.Bytes())
-	hash := sha512.New()
-	hash.Reset()
-	_, _ = hash.Write(hx.Bytes())
-	_, _ = hash.Write(hy.Bytes())
-	h := hash.Sum(nil)
+	hInput := crypto.EcPointToEncodedBytes(hx, hy)
+	reducedHash := crypto.GenHash(*hInput)
+	fmt.Printf("---->%v\n", reducedHash)
+	hv := new(big.Int).Mod(new(big.Int).SetBytes(reducedHash[:]), tss.EC().Params().N)
 
-	hv := new(big.Int).Mod(new(big.Int).SetBytes(h), tss.EC().Params().N)
 	px, py := tss.EC().ScalarBaseMult(hv.Bytes())
 	addrx, addry := tss.EC().Add(px, py, round.temp.pubSignKey.X(), round.temp.pubSignKey.Y())
 
 	addr := crypto.NewECPointNoCurveCheck(tss.EC(), addrx, addry)
-	round.save.address = addr
-	round.save.bigR = bigR
+
+	address := crypto.GenAddress(addr, bigR)
+
+	round.save.ReceiptAddress = address
 	round.end <- *round.save
 	return nil
 }

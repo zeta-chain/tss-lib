@@ -7,11 +7,12 @@
 package crypto
 
 import (
+	"crypto/sha512"
 	"errors"
-	"fmt"
 	"math/big"
 
 	"github.com/agl/ed25519/edwards25519"
+	"github.com/decred/dcrd/dcrec/edwards/v2"
 
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/tss"
@@ -20,27 +21,23 @@ import (
 	ecrypto "github.com/ethereum/go-ethereum/crypto"
 )
 
-func GenAddress(pubSignKey *ECPoint, pubViewKey *ECPoint) string {
+func GenAddress(Key1, key2 *ECPoint) string {
 	prefix := byte(thorprefix)
 	var address [69]byte
 	var preAddress [65]byte
 	preAddress[0] = prefix
-	pubSignKey.ToECDSAPubKey()
-	pubSignKeyBytes := EcPointToEncodedBytes(pubSignKey.X(), pubSignKey.Y())
-	pubViewKeyBytes := EcPointToEncodedBytes(pubViewKey.X(), pubViewKey.Y())
+	pubSignKeyBytes := EcPointToEncodedBytes(Key1.X(), Key1.Y())
+	pubViewKeyBytes := EcPointToEncodedBytes(key2.X(), key2.Y())
 	copy(preAddress[1:33], pubSignKeyBytes[:])
-	copy(preAddress[33:], pubViewKeyBytes[:])
+	copy(preAddress[33:65], pubViewKeyBytes[:])
 	// now we generated the hash
 	hashVal := ecrypto.Keccak256Hash(preAddress[:])
 	copy(address[:65], preAddress[:])
 	copy(address[65:69], hashVal[:])
-	fmt.Printf("---444555==>%v\n", address[1:33])
-	fmt.Printf("---1111--->%v\n", pubSignKey.Y())
-	fmt.Printf("---we x>>>%v\n", pubSignKey.X())
 	return base58.Encode(address[:])
 }
 
-func RecoverPubKeys(address string) (*ECPoint, *ECPoint, error) {
+func RecoverPubKeys(address string) (*edwards25519.ExtendedGroupElement, *edwards25519.ExtendedGroupElement, error) {
 	addressByte := base58.Decode(address)
 	if addressByte[0] != thorprefix {
 		return nil, nil, errors.New("invalid prefix")
@@ -55,20 +52,27 @@ func RecoverPubKeys(address string) (*ECPoint, *ECPoint, error) {
 			return nil, nil, errors.New("invalid address")
 		}
 	}
-	var pubSignKeyBytes [32]byte
-	var pubViewKeyBytes [32]byte
+	var pubSignKeyBytes, pubViewKeyBytes [32]byte
 	copy(pubSignKeyBytes[:], addressByte[1:33])
-	copy(pubViewKeyBytes[:], addressByte[34:65])
+	copy(pubViewKeyBytes[:], addressByte[33:65])
+	var pubSignKeyElement edwards25519.ExtendedGroupElement
+	var pubViewKeyElement edwards25519.ExtendedGroupElement
+	pubSignKeyElement.FromBytes(&pubSignKeyBytes)
+	pubViewKeyElement.FromBytes(&pubViewKeyBytes)
 
-	var h edwards25519.ExtendedGroupElement
-	h.FromBytes(&pubSignKeyBytes)
-	var bys [32]byte
-	edwards25519.FeToBytes(&bys, &h.X)
-	fmt.Printf("=====should==>%v\n", EncodedBytesToBigInt(&bys))
+	return &pubSignKeyElement, &pubViewKeyElement, nil
+}
 
-	fmt.Printf("-----44-=---%v\n", pubSignKeyBytes)
-	fmt.Printf("---222>>>%v\n", EncodedBytesToBigInt(&pubSignKeyBytes))
-	return nil, nil, nil
+func DecodeGroupElementToECPoints(element edwards25519.ExtendedGroupElement) (*ECPoint, error) {
+	var a [32]byte
+	edwards25519.FeToBytes(&a, &element.X)
+	var b [32]byte
+	edwards25519.FeToBytes(&b, &element.Y)
+
+	aInt := EncodedBytesToBigInt(&a)
+	bInt := EncodedBytesToBigInt(&b)
+	p, err := NewECPoint(edwards.Edwards(), aInt, bInt)
+	return p, err
 }
 
 func EncodedBytesToBigInt(s *[32]byte) *big.Int {
@@ -181,4 +185,15 @@ func EcPointToExtendedElement(x *big.Int, y *big.Int) edwards25519.ExtendedGroup
 		Z: Z,
 		T: T,
 	}
+}
+
+func GenHash(hInput [32]byte) [32]byte {
+	h := sha512.New()
+	h.Reset()
+	_, _ = h.Write(hInput[:])
+	var tempHash [64]byte
+	h.Sum(tempHash[:0])
+	var tempHashReduced [32]byte
+	edwards25519.ScReduce(&tempHashReduced, &tempHash)
+	return tempHashReduced
 }

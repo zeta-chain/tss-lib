@@ -10,6 +10,7 @@ import (
 	"math/big"
 
 	"github.com/binance-chain/tss-lib/crypto"
+	"github.com/binance-chain/tss-lib/eddsa/keygen"
 )
 
 type (
@@ -18,9 +19,14 @@ type (
 		ShareID *big.Int
 		// original indexes (ki in signing preparation phase)
 		Ks []*big.Int
-		// generated addresses
-		address *crypto.ECPoint
-		bigR    *crypto.ECPoint
+
+		// the EdDSA public key
+		EDDSAPub *crypto.ECPoint // y
+		// addresses passed from the sender, for testing purpose we store it here
+		StealthAddress string
+		// generated one-time address
+		ReceiptAddress string
+		ViewKey        keygen.ViewKey
 	}
 )
 
