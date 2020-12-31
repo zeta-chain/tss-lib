@@ -14,11 +14,7 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/agl/ed25519/edwards25519"
 	"github.com/btcsuite/btcd/btcec"
-	"github.com/btcsuite/btcutil/base58"
-	"github.com/decred/dcrd/dcrec/edwards/v2"
-	"github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/binance-chain/tss-lib/common"
 )
@@ -71,57 +67,4 @@ func GenerateNTildei(safePrimes [2]*big.Int) (NTildei, h1i, h2i *big.Int, err er
 	h1 := common.GetRandomGeneratorOfTheQuadraticResidue(NTildei)
 	h2 := common.GetRandomGeneratorOfTheQuadraticResidue(NTildei)
 	return NTildei, h1, h2, nil
-}
-
-func GenAddress(pubSignKey *ECPoint, pubViewKey *ECPoint) string {
-	prefix := byte(thorprefix)
-	var address [69]byte
-	var preAddress [65]byte
-	preAddress[0] = prefix
-	copy(address[1:32], pubSignKey.Bytes())
-	var compressedSignKey [32]byte
-	var out [64]byte
-	copy(out[:], pubSignKey.Bytes())
-	edwards25519.ScReduce(&compressedSignKey, &out)
-	copy(out[:], pubViewKey.Bytes())
-	var compressedViewKey [32]byte
-	edwards25519.ScReduce(&compressedViewKey, &out)
-	copy(preAddress[1:32], compressedSignKey[:])
-	copy(preAddress[32:], compressedViewKey[:])
-	// now we generated the hash
-	hashVal := crypto.Keccak256Hash(preAddress[:])
-	copy(address[:64], preAddress[:])
-	copy(address[65:], hashVal[:])
-	return base58.Encode(address[:])
-}
-
-func RecoverPubKeys(address string) (*ECPoint, *ECPoint, error) {
-	addressByte := base58.Decode(address)
-	if addressByte[0] != thorprefix {
-		return nil, nil, errors.New("invalid prefix")
-	}
-	var preAddress [64]byte
-	copy(preAddress[:], addressByte[:64])
-	hashVal := crypto.Keccak256Hash(preAddress[:])
-	compare := hashVal.Bytes()
-	checksum := addressByte[64:]
-	for j, el := range compare[:4] {
-		if !(el == checksum[j]) {
-			return nil, nil, errors.New("invalid address")
-		}
-	}
-	var pubSignKeyBytes [32]byte
-	var pubViewKeyBytes [32]byte
-	copy(pubSignKeyBytes[:], addressByte[1:32])
-	copy(pubViewKeyBytes[:], addressByte[33:64])
-
-	var h1 edwards25519.ExtendedGroupElement
-	edwards25519.GeScalarMultBase(&h1, &pubSignKeyBytes)
-
-	var h2 edwards25519.ExtendedGroupElement
-	edwards25519.GeScalarMultBase(&h2, &pubSignKeyBytes)
-
-	NewECPoint(edwards.Edwards(), h1.X, h1.Y)
-
-	return nil, nil, nil
 }

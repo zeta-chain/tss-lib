@@ -110,5 +110,6 @@ func TestGenerateAddressAndImport(t *testing.T) {
 	px, py = cv.ScalarBaseMult(ui.Bytes())
 	pubViewKey := NewECPointNoCurveCheck(edwards.Edwards(), px, py)
 	address := GenAddress(pubSignKey, pubViewKey)
-	RecoverPubKeys(address)
+	_, _, ret := RecoverPubKeys(address)
+	assert.Nil(t, ret)
 }
