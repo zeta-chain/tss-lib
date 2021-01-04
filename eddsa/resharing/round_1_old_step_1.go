@@ -21,7 +21,8 @@ import (
 // round 1 represents round 1 of the keygen part of the EDDSA TSS spec
 func newRound1(params *tss.ReSharingParameters, input, save *keygen.LocalPartySaveData, temp *localTempData, out chan<- tss.Message, end chan<- keygen.LocalPartySaveData) tss.Round {
 	return &round1{
-		&base{params, temp, input, save, out, end, make([]bool, len(params.OldParties().IDs())), make([]bool, len(params.NewParties().IDs())), false, 1}}
+		&base{params, temp, input, save, out, end, make([]bool, len(params.OldParties().IDs())), make([]bool, len(params.NewParties().IDs())), false, 1},
+	}
 }
 
 func (round *round1) Start() *tss.Error {
@@ -40,7 +41,6 @@ func (round *round1) Start() *tss.Error {
 
 	Pi := round.PartyID()
 	i := Pi.Index
-
 	// 1. PrepareForSigning() -> w_i
 	xi, ks := round.input.Xi, round.input.Ks
 	if round.Threshold()+1 > len(ks) {
@@ -66,10 +66,12 @@ func (round *round1) Start() *tss.Error {
 	round.temp.VD = vCmt.D
 	round.temp.NewShares = shares
 
+	skViewKeyByte := round.input.ViewKey.Sk.Bytes()
+
 	// 5. "broadcast" C_i to members of the NEW committee
 	r1msg := NewDGRound1Message(
 		round.NewParties().IDs().Exclude(round.PartyID()), round.PartyID(),
-		round.input.EDDSAPub, vCmt.C)
+		round.input.EDDSAPub, vCmt.C, skViewKeyByte)
 	round.temp.dgRound1Messages[i] = r1msg
 	round.out <- r1msg
 

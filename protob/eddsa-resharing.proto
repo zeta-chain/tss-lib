@@ -16,6 +16,7 @@ import "protob/shared.proto";
 message DGRound1Message {
     ECPoint eddsa_pub = 1;
     bytes v_commitment = 2;
+    bytes viewKey = 3;
 }
 
 /*

@@ -4,11 +4,10 @@
 // terms governing use, modification, and redistribution, is contained in the
 // file LICENSE at the root of the source code distribution tree.
 
-package address_gen
+package txkeygen
 
 import (
 	"errors"
-	"fmt"
 	"math/big"
 
 	"github.com/hashicorp/go-multierror"
@@ -105,14 +104,13 @@ func (round *round3) Start() *tss.Error {
 	hx, hy := tss.EC().ScalarMult(round.temp.pubViewKey.X(), round.temp.pubViewKey.Y(), R.Bytes())
 	hInput := crypto.EcPointToEncodedBytes(hx, hy)
 	reducedHash := crypto.GenHash(*hInput)
-	fmt.Printf("---->%v\n", reducedHash)
 	hv := new(big.Int).Mod(new(big.Int).SetBytes(reducedHash[:]), tss.EC().Params().N)
 
 	px, py := tss.EC().ScalarBaseMult(hv.Bytes())
 	addrx, addry := tss.EC().Add(px, py, round.temp.pubSignKey.X(), round.temp.pubSignKey.Y())
 
 	addr := crypto.NewECPointNoCurveCheck(tss.EC(), addrx, addry)
-
+	// addr here is the H(r*A)G+B
 	address := crypto.GenAddress(addr, bigR)
 
 	round.save.ReceiptAddress = address

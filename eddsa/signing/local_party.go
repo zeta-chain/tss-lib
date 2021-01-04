@@ -58,8 +58,8 @@ type (
 
 		// round 2
 		cjs []*big.Int
-		si  *[32]byte
-
+		si,
+		temp2 *[32]byte
 		// round 3
 		r *big.Int
 	}

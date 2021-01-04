@@ -19,6 +19,7 @@ import (
 
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
+	"github.com/binance-chain/tss-lib/crypto/vss"
 	"github.com/binance-chain/tss-lib/eddsa/keygen"
 	"github.com/binance-chain/tss-lib/test"
 	"github.com/binance-chain/tss-lib/tss"
@@ -27,13 +28,33 @@ import (
 const (
 	testParticipants   = test.TestParticipants
 	testThreshold      = test.TestThreshold
-	testReceiptAddress = "BBpCVUCH9uh4d4Skn9qJDcSPz1AtNDJDSedJ9z55HR6pZU5wwYaRtCPQuCGSQUNiQVw42bmDusXCmVX2rF1XDd5HwG2JBC"
+	testReceiptAddress = "B1e6NijaZxk1CRWjLrWieHyDPz4oczPXC7qfx7bnntwQCXAgWPKoAmwcGtZzwmG7N9ucFq7doGb5t4tKP5rp9fpmVs8Ecv"
 )
 
 func setUp(level string) {
 	if err := log.SetLogLevel("tss-lib", level); err != nil {
 		panic(err)
 	}
+}
+
+func signingKeyVerify(receiptAddress string, skSignKey *big.Int, skViewKey *big.Int) bool {
+	pub1, pub2, err := crypto.RecoverPubKeys(receiptAddress)
+	if err != nil {
+		return false
+	}
+	receiptKey, err := crypto.DecodeGroupElementToECPoints(*pub1)
+	bigR, err2 := crypto.DecodeGroupElementToECPoints(*pub2)
+	if err != nil || err2 != nil {
+		return false
+	}
+	hx, hy := tss.EC().ScalarMult(bigR.X(), bigR.Y(), skViewKey.Bytes())
+
+	hInput := crypto.EcPointToEncodedBytes(hx, hy)
+	h := crypto.GenHash(*hInput)
+	hv := new(big.Int).Mod(new(big.Int).SetBytes(h[:]), tss.EC().Params().N)
+	x := new(big.Int).Add(hv, skSignKey)
+	calPubKeyX, calPubKeyY := tss.EC().ScalarBaseMult(x.Bytes())
+	return calPubKeyX.Cmp(receiptKey.X()) == 0 && calPubKeyY.Cmp(receiptKey.Y()) == 0
 }
 
 func TestE2EConcurrent(t *testing.T) {
@@ -73,6 +94,19 @@ func TestE2EConcurrent(t *testing.T) {
 		}(P)
 	}
 
+	var shares vss.Shares
+	for i := 0; i < threshold+1; i++ {
+		t := vss.Share{
+			Threshold: threshold,
+			ID:        parties[i].keys.ShareID,
+			Share:     parties[i].keys.Xi,
+		}
+		shares = append(shares, &t)
+	}
+	sk, err := shares.ReConstruct()
+	assert.Nil(t, err)
+	out := signingKeyVerify(testReceiptAddress, sk, parties[0].keys.ViewKey.Sk)
+	assert.True(t, out)
 	var ended int32
 signing:
 	for {
@@ -120,22 +154,22 @@ signing:
 				// END check s correctness
 
 				// BEGIN EDDSA verify
-				pkX, pkY := keys[0].EDDSAPub.X(), keys[0].EDDSAPub.Y()
+				pub1, _, err := crypto.RecoverPubKeys(testReceiptAddress)
+				assert.Nil(t, err)
+				receiptKey, err := crypto.DecodeGroupElementToECPoints(*pub1)
+
 				pk := edwards.PublicKey{
 					Curve: tss.EC(),
-					X:     pkX,
-					Y:     pkY,
+					X:     receiptKey.X(),
+					Y:     receiptKey.Y(),
 				}
-
 				newSig, err := edwards.ParseSignature(parties[0].data.Signature.Signature)
 				if err != nil {
 					println("new sig error, ", err.Error())
 				}
-
 				ok := edwards.Verify(&pk, msg.Bytes(), newSig.R, newSig.S)
 				assert.True(t, ok, "eddsa verify must pass")
 				t.Log("EDDSA signing test done.")
-				// END EDDSA verify
 
 				break signing
 			}

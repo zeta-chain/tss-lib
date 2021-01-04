@@ -25,8 +25,9 @@ import (
 )
 
 const (
-	testParticipants = test.TestParticipants
-	testThreshold    = test.TestThreshold
+	testParticipants   = test.TestParticipants
+	testThreshold      = test.TestThreshold
+	testReceiptAddress = "B1e6NijaZxk1CRWjLrWieHyDPz4oczPXC7qfx7bnntwQCXAgWPKoAmwcGtZzwmG7N9ucFq7doGb5t4tKP5rp9fpmVs8Ecv"
 )
 
 func setUp(level string) {
@@ -164,7 +165,7 @@ signing:
 
 	for j, signPID := range signPIDs {
 		params := tss.NewParameters(signP2pCtx, signPID, len(signPIDs), newThreshold)
-		P := signing.NewLocalParty(big.NewInt(42), params, signKeys[j], signOutCh, signEndCh).(*signing.LocalParty)
+		P := signing.NewLocalParty(big.NewInt(42), testReceiptAddress, params, signKeys[j], signOutCh, signEndCh).(*signing.LocalParty)
 		signParties = append(signParties, P)
 		go func(P *signing.LocalParty) {
 			if err := P.Start(); err != nil {
@@ -203,11 +204,14 @@ signing:
 				t.Logf("Signing done. Received sign data from %d participants", signEnded)
 
 				// BEGIN EDDSA verify
-				pkX, pkY := signKeys[0].EDDSAPub.X(), signKeys[0].EDDSAPub.Y()
+				pub1, _, err := crypto.RecoverPubKeys(testReceiptAddress)
+				assert.Nil(t, err)
+				receiptKey, err := crypto.DecodeGroupElementToECPoints(*pub1)
+
 				pk := edwards.PublicKey{
 					Curve: tss.EC(),
-					X:     pkX,
-					Y:     pkY,
+					X:     receiptKey.X(),
+					Y:     receiptKey.Y(),
 				}
 
 				newSig, err := edwards.ParseSignature(signData.Signature.Signature)

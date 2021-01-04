@@ -18,16 +18,8 @@ import (
 
 // These messages were generated from Protocol Buffers definitions into eddsa-resharing.pb.go
 
-var (
-	// Ensure that signing messages implement ValidateBasic
-	_ = []tss.MessageContent{
-		(*DGRound1Message)(nil),
-		(*DGRound2Message)(nil),
-		(*DGRound3Message1)(nil),
-		(*DGRound3Message2)(nil),
-		(*DGRound4Message)(nil),
-	}
-)
+// Ensure that signing messages implement ValidateBasic
+var _ = []tss.MessageContent{(*DGRound1Message)(nil), (*DGRound2Message)(nil), (*DGRound3Message1)(nil), (*DGRound3Message2)(nil), (*DGRound4Message)(nil)}
 
 // ----- //
 
@@ -36,6 +28,7 @@ func NewDGRound1Message(
 	from *tss.PartyID,
 	eddsaPub *crypto.ECPoint,
 	vct cmt.HashCommitment,
+	viewKeyBytes []byte,
 ) tss.ParsedMessage {
 	meta := tss.MessageRouting{
 		From:             from,
@@ -46,6 +39,7 @@ func NewDGRound1Message(
 	content := &DGRound1Message{
 		EddsaPub:    eddsaPub.ToProtobufPoint(),
 		VCommitment: vct.Bytes(),
+		ViewKey:     viewKeyBytes,
 	}
 	msg := tss.NewMessageWrapper(meta, content)
 	return tss.NewMessage(meta, content, msg)
@@ -55,7 +49,7 @@ func (m *DGRound1Message) ValidateBasic() bool {
 	return m != nil &&
 		m.GetEddsaPub() != nil &&
 		m.GetEddsaPub().ValidateBasic() &&
-		common.NonEmptyBytes(m.VCommitment)
+		common.NonEmptyBytes(m.VCommitment) && m.GetViewKey() != nil
 }
 
 func (m *DGRound1Message) UnmarshalEDDSAPub() (*crypto.ECPoint, error) {

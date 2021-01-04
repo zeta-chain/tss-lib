@@ -69,11 +69,20 @@ func (round *round3) Start() *tss.Error {
 		R = crypto.AddExtendedElements(R, extendedRj)
 	}
 
+	pub1, RElement, err := crypto.RecoverPubKeys(round.temp.receiptAddress)
+	if err != nil {
+		return round.WrapError(fmt.Errorf("error in recover the receipt address %v", err), nil)
+	}
+
+	receiptKey, err := crypto.DecodeGroupElementToECPoints(*pub1)
+	if err != nil {
+		return round.WrapError(fmt.Errorf("error in decode the receipt key with err %v", err), nil)
+	}
+
 	// 7. compute lambda
 	var encodedR [32]byte
 	R.ToBytes(&encodedR)
-	encodedPubKey := crypto.EcPointToEncodedBytes(round.key.EDDSAPub.X(), round.key.EDDSAPub.Y())
-
+	encodedPubKey := crypto.EcPointToEncodedBytes(receiptKey.X(), receiptKey.Y())
 	// h = hash512(k || A || M)
 	h := sha512.New()
 	h.Reset()
@@ -87,10 +96,7 @@ func (round *round3) Start() *tss.Error {
 	edwards25519.ScReduce(&lambdaReduced, &lambda)
 
 	// compute H(a*R)
-	_, RElement, err := crypto.RecoverPubKeys(round.temp.receiptAddress)
-	if err != nil {
-		return round.WrapError(fmt.Errorf("error in recover the receipt address %v", err), nil)
-	}
+
 	point, err := crypto.DecodeGroupElementToECPoints(*RElement)
 	if err != nil {
 		return round.WrapError(fmt.Errorf("error in recover the receipt address %v", err), nil)
@@ -99,18 +105,22 @@ func (round *round3) Start() *tss.Error {
 	aR := point.ScalarMult(viewSk)
 	hInput := crypto.EcPointToEncodedBytes(aR.X(), aR.Y())
 	reducedHash := crypto.GenHash(*hInput)
-	fmt.Printf("reducedddd>>>>%v\n", reducedHash)
-	sharex := new(big.Int).Add(round.temp.wi, new(big.Int).SetBytes(reducedHash[:]))
-	// 8. compute si
-	var localS [32]byte
-	edwards25519.ScMulAdd(&localS, &lambdaReduced, crypto.BigIntToEncodedBytes(sharex), riBytes)
+	hv := new(big.Int).Mod(new(big.Int).SetBytes(reducedHash[:]), tss.EC().Params().N)
 
+	var localTemp2, sendS [32]byte
+	var localSecret [32]byte
+	edwards25519.ScMulAdd(&sendS, &lambdaReduced, crypto.BigIntToEncodedBytes(round.temp.wi), riBytes)
+	// localtemp2=h_1*(h_2(a*R))
+	edwards25519.ScMulAdd(&localTemp2, &lambdaReduced, crypto.BigIntToEncodedBytes(hv), crypto.BigIntToEncodedBytes(big.NewInt(0)))
+	edwards25519.ScMulAdd(&localSecret, &sendS, crypto.BigIntToEncodedBytes(big.NewInt(1)), &localTemp2)
+	// 8. compute si
 	// 9. store r3 message pieces
-	round.temp.si = &localS
+	round.temp.temp2 = &localTemp2
+	round.temp.si = &localSecret
 	round.temp.r = crypto.EncodedBytesToBigInt(&encodedR)
 
 	// 10. broadcast si to other parties
-	r3msg := NewSignRound3Message(round.PartyID(), crypto.EncodedBytesToBigInt(&localS))
+	r3msg := NewSignRound3Message(round.PartyID(), crypto.EncodedBytesToBigInt(&sendS))
 	round.temp.signRound3Messages[round.PartyID().Index] = r3msg
 	round.out <- r3msg
 

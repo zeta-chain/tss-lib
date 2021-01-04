@@ -4,10 +4,9 @@
 // terms governing use, modification, and redistribution, is contained in the
 // file LICENSE at the root of the source code distribution tree.
 
-package address_gen
+package txkeygen
 
 import (
-	"crypto/sha512"
 	"fmt"
 	"math/big"
 	"runtime"
@@ -269,12 +268,10 @@ func signingKeyVerify(data LocalPartySaveData, skSignKey *big.Int, skViewKey *bi
 		return false
 	}
 	hx, hy := tss.EC().ScalarMult(bigR.X(), bigR.Y(), skViewKey.Bytes())
-	hash := sha512.New()
-	hash.Reset()
-	_, _ = hash.Write(hx.Bytes())
-	_, _ = hash.Write(hy.Bytes())
-	h := hash.Sum(nil)
-	hv := new(big.Int).Mod(new(big.Int).SetBytes(h), tss.EC().Params().N)
+
+	hInput := crypto.EcPointToEncodedBytes(hx, hy)
+	h := crypto.GenHash(*hInput)
+	hv := new(big.Int).Mod(new(big.Int).SetBytes(h[:]), tss.EC().Params().N)
 	x := new(big.Int).Add(hv, skSignKey)
 	calPubKeyX, calPubKeyY := tss.EC().ScalarBaseMult(x.Bytes())
 	return calPubKeyX.Cmp(receiptKey.X()) == 0 && calPubKeyY.Cmp(receiptKey.Y()) == 0
@@ -292,12 +289,10 @@ func viewKeyVerify(data LocalPartySaveData, skViewKey *big.Int, pubSignKey *cryp
 	}
 
 	hx, hy := tss.EC().ScalarMult(bigR.X(), bigR.Y(), skViewKey.Bytes())
-	hash := sha512.New()
-	hash.Reset()
-	_, _ = hash.Write(hx.Bytes())
-	_, _ = hash.Write(hy.Bytes())
-	h := hash.Sum(nil)
-	hv := new(big.Int).Mod(new(big.Int).SetBytes(h), tss.EC().Params().N)
+
+	hInput := crypto.EcPointToEncodedBytes(hx, hy)
+	h := crypto.GenHash(*hInput)
+	hv := new(big.Int).Mod(new(big.Int).SetBytes(h[:]), tss.EC().Params().N)
 	px, py := tss.EC().ScalarBaseMult(hv.Bytes())
 	retX, retY := tss.EC().Add(px, py, pubSignKey.X(), pubSignKey.Y())
 	return retX.Cmp(receiptKey.X()) == 0 && retY.Cmp(receiptKey.Y()) == 0

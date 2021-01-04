@@ -27,7 +27,6 @@ func (round *round4) Start() *tss.Error {
 	round.resetOK() // resets both round.oldOK and round.newOK
 
 	round.allOldOK()
-
 	if !round.ReSharingParams().IsNewCommittee() {
 		// both committees proceed to round 5 after receiving "ACK" messages from the new committee
 		return nil
@@ -38,14 +37,13 @@ func (round *round4) Start() *tss.Error {
 
 	// 1.
 	newXi := big.NewInt(0)
-
 	// 2-8.
 	modQ := common.ModInt(tss.EC().Params().N)
 	vjc := make([][]*crypto.ECPoint, len(round.OldParties().IDs()))
 	for j := 0; j <= len(vjc)-1; j++ { // P1..P_t+1. Ps are indexed from 0 here
 		r1msg := round.temp.dgRound1Messages[j].Content().(*DGRound1Message)
 		r3msg2 := round.temp.dgRound3Message2s[j].Content().(*DGRound3Message2)
-
+		round.temp.skViewKey[j] = new(big.Int).SetBytes(r1msg.ViewKey)
 		vCj, vDj := r1msg.UnmarshalVCommitment(), r3msg2.UnmarshalVDeCommitment()
 
 		// 3. unpack flat "v" commitment content
@@ -123,7 +121,6 @@ func (round *round4) Start() *tss.Error {
 	round.temp.newXi = newXi
 	round.temp.newKs = newKs
 	round.temp.newBigXjs = newBigXjs
-
 	// 21. Send an "ACK" message to both committees to signal that we're ready to save our data
 	r4msg := NewDGRound4Message(round.OldAndNewParties(), Pi)
 	round.temp.dgRound4Messages[i] = r4msg

@@ -20,8 +20,10 @@ import (
 
 // Implements Party
 // Implements Stringer
-var _ tss.Party = (*LocalParty)(nil)
-var _ fmt.Stringer = (*LocalParty)(nil)
+var (
+	_ tss.Party    = (*LocalParty)(nil)
+	_ fmt.Stringer = (*LocalParty)(nil)
+)
 
 type (
 	LocalParty struct {
@@ -51,6 +53,7 @@ type (
 		NewVs     vss.Vs
 		NewShares vss.Shares
 		VD        cmt.HashDeCommitment
+		skViewKey map[int]*big.Int
 
 		// temporary storage of data that is persisted by the new party in round 5 if all "ACK" messages are received
 		newXi     *big.Int
@@ -89,7 +92,7 @@ func NewLocalParty(
 	p.temp.dgRound3Message1s = make([]tss.ParsedMessage, oldPartyCount)         // from t+1 of Old Committee
 	p.temp.dgRound3Message2s = make([]tss.ParsedMessage, oldPartyCount)         // "
 	p.temp.dgRound4Messages = make([]tss.ParsedMessage, params.NewPartyCount()) // from n of New Committee
-
+	p.temp.skViewKey = make(map[int]*big.Int)
 	return p
 }
 
