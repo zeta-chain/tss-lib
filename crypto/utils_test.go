@@ -19,7 +19,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/binance-chain/tss-lib/common"
-	"github.com/binance-chain/tss-lib/tss"
 )
 
 var (
@@ -104,17 +103,20 @@ func TestECBasePoint2(t *testing.T) {
 func TestGenerateAddressAndImport(t *testing.T) {
 	cv := edwards.Edwards()
 
-	ui := common.GetRandomPositiveInt(tss.EC().Params().N)
+	ui := common.GetRandomPositiveInt(cv.N)
 	px, py := cv.ScalarBaseMult(ui.Bytes())
-	pubSignKey := NewECPointNoCurveCheck(edwards.Edwards(), px, py)
+	pubSignKey, err := NewECPoint(edwards.Edwards(), px, py)
+	assert.Nil(t, err)
 
-	ui2 := common.GetRandomPositiveInt(tss.EC().Params().N)
+	ui2 := common.GetRandomPositiveInt(cv.N)
 	px, py = cv.ScalarBaseMult(ui2.Bytes())
 	pubViewKey := NewECPointNoCurveCheck(edwards.Edwards(), px, py)
 	address := GenAddress(pubSignKey, pubViewKey)
 	fmt.Printf("%v\n", address)
-	fmt.Printf("%v\n", hex.EncodeToString(ui.Bytes()))
-	fmt.Printf("%v\n", hex.EncodeToString(ui2.Bytes()))
+	uii := BigIntToEncodedBytes(ui)
+	uii2 := BigIntToEncodedBytes(ui2)
+	fmt.Printf("spendkey:=%v\n", hex.EncodeToString(uii[:]))
+	fmt.Printf("%v\n", hex.EncodeToString(uii2[:]))
 	signKey, viewKey, err := RecoverPubKeys(address)
 	assert.Nil(t, err)
 	s1, err := DecodeGroupElementToECPoints(*signKey)
@@ -125,28 +127,93 @@ func TestGenerateAddressAndImport(t *testing.T) {
 	assert.True(t, reflect.DeepEqual(s2.Bytes(), pubViewKey.Bytes()))
 }
 
-func TestGenerateAddressAndImport2(t *testing.T) {
-	// viewkey := "6c0f144699231f4d1c527a23b12bb06e2f0e7a1fb2e88023cb413725d7c87a03"
-	spendkey := "4b1bd20e4033a5599a21fc885cde57293c8ded409e2602adc40811ea0191da04"
-	// vsk, err := hex.DecodeString(viewkey)
+func TestGenerateAddressAndImport3(t *testing.T) {
+	viewkey := "1bfb1d12f7e5f1ca56bfc1bfe83916841d232c7974aa9203f254c69c9bd83ba7"
+	spendkey := "d7a1221f48147e804bb0cd79fb38bb8fbb5f3a00fdbbdb7b4b100f71d330dc1c"
+	vsk, err := hex.DecodeString(viewkey)
 	ssk, err := hex.DecodeString(spendkey)
 	fmt.Printf("lenth------>%v\n", len(ssk))
+	fmt.Printf("lenth------>%v\n", len(vsk))
 	assert.Nil(t, err)
-	a, _, _ := RecoverPubKeys("45aSveAyRcWKunYwzWTEzyMzkgaHEJQKAdxLegP2jMRBZGsfUTynVJQGqLqfMkR5No9JnarfxbKgSWFpp2LgaioqADZRFZR")
+	a, b, _ := RecoverPubKeys("47G8Wh7SfTn414VmQYeEpkbYZWBSdsiGRHkytDnpL6gfdJaUmxLKv4U5kUBwaJQ3r4Fgy2w6dtkVLcLZQQQ15Jn6HKtWA5n")
 
-	var src [32]byte
+	var src, src2 [32]byte
 	copy(src[:], ssk)
-	v := EncodedBytesToBigInt(&src)
-	vx, vy := edwards.Edwards().ScalarBaseMult(v.Bytes())
-	// sx, sy := edwards.Edwards().ScalarBaseMult(vsk)
+	copy(src2[:], vsk)
+	spendkeyd := EncodedBytesToBigInt(&src)
+	sx, sy := edwards.Edwards().ScalarBaseMult(spendkeyd.Bytes())
+	vx, vy := edwards.Edwards().ScalarBaseMult(EncodedBytesToBigInt(&src2).Bytes())
+
+	out2 := BigIntToEncodedBytes(spendkeyd)
+	fmt.Printf("wwwwww--->%v\n", hex.EncodeToString(out2[:]))
 
 	aa, err := DecodeGroupElementToECPoints(*a)
 	assert.Nil(t, err)
+
+	bb, err := DecodeGroupElementToECPoints(*b)
+	assert.Nil(t, err)
 	// ab, err := DecodeGroupElementToECPoints(*b)
 	// assert.Nil(t, err)
+	assert.Equal(t, aa.X().String(), sx.String())
+	assert.Equal(t, aa.Y().String(), sy.String())
 
-	fmt.Printf("ax==%v\n", aa.X())
-	fmt.Printf("ax==%v\n", vx)
-	fmt.Printf("ay==%v\n", aa.Y())
-	fmt.Printf("ay==%v\n", vy)
+	assert.Equal(t, bb.X().String(), vx.String())
+	assert.Equal(t, bb.Y().String(), vy.String())
+}
+
+func TestGenerateAddressAndImport2(t *testing.T) {
+	viewkey := "6c0f144699231f4d1c527a23b12bb06e2f0e7a1fb2e88023cb413725d7c87a03"
+	spendkey := "4b1bd20e4033a5599a21fc885cde57293c8ded409e2602adc40811ea0191da04"
+	vsk, err := hex.DecodeString(viewkey)
+	ssk, err := hex.DecodeString(spendkey)
+	fmt.Printf("lenth------>%v\n", len(ssk))
+	assert.Nil(t, err)
+	a, b, _ := RecoverPubKeys("45aSveAyRcWKunYwzWTEzyMzkgaHEJQKAdxLegP2jMRBZGsfUTynVJQGqLqfMkR5No9JnarfxbKgSWFpp2LgaioqADZRFZR")
+
+	var src, src2 [32]byte
+	copy(src[:], ssk)
+	copy(src2[:], vsk)
+	spendkeyd := EncodedBytesToBigInt(&src)
+	sx, sy := edwards.Edwards().ScalarBaseMult(spendkeyd.Bytes())
+	vx, vy := edwards.Edwards().ScalarBaseMult(EncodedBytesToBigInt(&src2).Bytes())
+
+	out2 := BigIntToEncodedBytes(spendkeyd)
+	fmt.Printf("wwwwww--->%v\n", hex.EncodeToString(out2[:]))
+
+	aa, err := DecodeGroupElementToECPoints(*a)
+	assert.Nil(t, err)
+
+	bb, err := DecodeGroupElementToECPoints(*b)
+	assert.Nil(t, err)
+	// ab, err := DecodeGroupElementToECPoints(*b)
+	// assert.Nil(t, err)
+	assert.Equal(t, aa.X().String(), sx.String())
+	assert.Equal(t, aa.Y().String(), sy.String())
+
+	assert.Equal(t, bb.X().String(), vx.String())
+	assert.Equal(t, bb.Y().String(), vy.String())
+}
+
+func TestGenerateAddressAndImport4(t *testing.T) {
+	viewkey := "6c0f144699231f4d1c527a23b12bb06e2f0e7a1fb2e88023cb413725d7c87a03"
+	spendkey := "4b1bd20e4033a5599a21fc885cde57293c8ded409e2602adc40811ea0191da04"
+	vsk, err := hex.DecodeString(viewkey)
+	ssk, err := hex.DecodeString(spendkey)
+	fmt.Printf("lenth------>%v\n", len(ssk))
+	assert.Nil(t, err)
+	var src, src2 [32]byte
+	copy(src[:], ssk)
+	copy(src2[:], vsk)
+	spendkeyd := EncodedBytesToBigInt(&src)
+	sx, sy := edwards.Edwards().ScalarBaseMult(spendkeyd.Bytes())
+	vx, vy := edwards.Edwards().ScalarBaseMult(EncodedBytesToBigInt(&src2).Bytes())
+
+	p1, err := NewECPoint(edwards.Edwards(), sx, sy)
+	assert.Nil(t, err)
+
+	p2, err := NewECPoint(edwards.Edwards(), vx, vy)
+	assert.Nil(t, err)
+	output := GenAddress(p1, p2)
+	fmt.Printf("output----%v\n", output)
+	assert.Equal(t, output, "45aSveAyRcWKunYwzWTEzyMzkgaHEJQKAdxLegP2jMRBZGsfUTynVJQGqLqfMkR5No9JnarfxbKgSWFpp2LgaioqADZRFZR")
 }
