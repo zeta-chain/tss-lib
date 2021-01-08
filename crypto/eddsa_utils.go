@@ -8,7 +8,9 @@ package crypto
 
 import (
 	"crypto/sha512"
+	"encoding/hex"
 	"errors"
+	"fmt"
 	"math/big"
 
 	"github.com/agl/ed25519/edwards25519"
@@ -17,14 +19,15 @@ import (
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/tss"
 
-	"github.com/btcsuite/btcutil/base58"
 	ecrypto "github.com/ethereum/go-ethereum/crypto"
+	"github.com/patcito/monero/base58"
 )
 
 func GenAddress(Key1, key2 *ECPoint) string {
 	prefix := byte(thorprefix)
 	var address [69]byte
 	var preAddress [65]byte
+	var encodedAddress [95]byte
 	preAddress[0] = prefix
 	pubSignKeyBytes := EcPointToEncodedBytes(Key1.X(), Key1.Y())
 	pubViewKeyBytes := EcPointToEncodedBytes(key2.X(), key2.Y())
@@ -34,11 +37,16 @@ func GenAddress(Key1, key2 *ECPoint) string {
 	hashVal := ecrypto.Keccak256Hash(preAddress[:])
 	copy(address[:65], preAddress[:])
 	copy(address[65:69], hashVal[:])
-	return base58.Encode(address[:])
+	base58.Encode(encodedAddress[:], address[:])
+	return base58.EncodeToString(address[:])
 }
 
 func RecoverPubKeys(address string) (*edwards25519.ExtendedGroupElement, *edwards25519.ExtendedGroupElement, error) {
-	addressByte := base58.Decode(address)
+	addressByte, err := base58.DecodeString(address)
+	if err != nil {
+		fmt.Printf("error!!!!")
+		return nil, nil, err
+	}
 	if addressByte[0] != thorprefix {
 		return nil, nil, errors.New("invalid prefix")
 	}
@@ -55,6 +63,8 @@ func RecoverPubKeys(address string) (*edwards25519.ExtendedGroupElement, *edward
 	var pubSignKeyBytes, pubViewKeyBytes [32]byte
 	copy(pubSignKeyBytes[:], addressByte[1:33])
 	copy(pubViewKeyBytes[:], addressByte[33:65])
+	fmt.Printf("VVV--->%v\n", hex.EncodeToString(pubSignKeyBytes[:]))
+	fmt.Printf("VVV2--->%v\n", hex.EncodeToString(pubViewKeyBytes[:]))
 	var pubSignKeyElement edwards25519.ExtendedGroupElement
 	var pubViewKeyElement edwards25519.ExtendedGroupElement
 	pubSignKeyElement.FromBytes(&pubSignKeyBytes)

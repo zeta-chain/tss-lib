@@ -8,6 +8,8 @@ package crypto
 
 import (
 	"crypto/elliptic"
+	"encoding/hex"
+	"fmt"
 	"math/big"
 	"reflect"
 	"testing"
@@ -106,10 +108,13 @@ func TestGenerateAddressAndImport(t *testing.T) {
 	px, py := cv.ScalarBaseMult(ui.Bytes())
 	pubSignKey := NewECPointNoCurveCheck(edwards.Edwards(), px, py)
 
-	ui = common.GetRandomPositiveInt(tss.EC().Params().N)
-	px, py = cv.ScalarBaseMult(ui.Bytes())
+	ui2 := common.GetRandomPositiveInt(tss.EC().Params().N)
+	px, py = cv.ScalarBaseMult(ui2.Bytes())
 	pubViewKey := NewECPointNoCurveCheck(edwards.Edwards(), px, py)
 	address := GenAddress(pubSignKey, pubViewKey)
+	fmt.Printf("%v\n", address)
+	fmt.Printf("%v\n", hex.EncodeToString(ui.Bytes()))
+	fmt.Printf("%v\n", hex.EncodeToString(ui2.Bytes()))
 	signKey, viewKey, err := RecoverPubKeys(address)
 	assert.Nil(t, err)
 	s1, err := DecodeGroupElementToECPoints(*signKey)
@@ -118,4 +123,30 @@ func TestGenerateAddressAndImport(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, reflect.DeepEqual(s1.Bytes(), pubSignKey.Bytes()))
 	assert.True(t, reflect.DeepEqual(s2.Bytes(), pubViewKey.Bytes()))
+}
+
+func TestGenerateAddressAndImport2(t *testing.T) {
+	// viewkey := "6c0f144699231f4d1c527a23b12bb06e2f0e7a1fb2e88023cb413725d7c87a03"
+	spendkey := "4b1bd20e4033a5599a21fc885cde57293c8ded409e2602adc40811ea0191da04"
+	// vsk, err := hex.DecodeString(viewkey)
+	ssk, err := hex.DecodeString(spendkey)
+	fmt.Printf("lenth------>%v\n", len(ssk))
+	assert.Nil(t, err)
+	a, _, _ := RecoverPubKeys("45aSveAyRcWKunYwzWTEzyMzkgaHEJQKAdxLegP2jMRBZGsfUTynVJQGqLqfMkR5No9JnarfxbKgSWFpp2LgaioqADZRFZR")
+
+	var src [32]byte
+	copy(src[:], ssk)
+	v := EncodedBytesToBigInt(&src)
+	vx, vy := edwards.Edwards().ScalarBaseMult(v.Bytes())
+	// sx, sy := edwards.Edwards().ScalarBaseMult(vsk)
+
+	aa, err := DecodeGroupElementToECPoints(*a)
+	assert.Nil(t, err)
+	// ab, err := DecodeGroupElementToECPoints(*b)
+	// assert.Nil(t, err)
+
+	fmt.Printf("ax==%v\n", aa.X())
+	fmt.Printf("ax==%v\n", vx)
+	fmt.Printf("ay==%v\n", aa.Y())
+	fmt.Printf("ay==%v\n", vy)
 }

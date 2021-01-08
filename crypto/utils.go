@@ -21,7 +21,7 @@ import (
 
 var basePoint2Cache = new(sync.Map)
 
-const thorprefix = 0x11
+const thorprefix = 0x12
 
 // ECBasePoint2 returns a shared point of unknown discrete logarithm for the given curve, used only in GG20 ECDSA signing phase 3 (as h)
 // Mimics the KZen-networks/curv impl: https://git.io/JfwSa
