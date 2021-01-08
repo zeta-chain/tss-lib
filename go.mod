@@ -5,7 +5,6 @@ go 1.12
 require (
 	github.com/agl/ed25519 v0.0.0-20200225211852-fd4d107ace12
 	github.com/btcsuite/btcd v0.20.1-beta
-	github.com/btcsuite/btcutil v0.0.0-20190425235716-9e5f4b9a998d
 	github.com/decred/dcrd/dcrec/edwards/v2 v2.0.0
 	github.com/ethereum/go-ethereum v1.9.25
 	github.com/golang/protobuf v1.4.2
@@ -16,6 +15,7 @@ require (
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/otiai10/mint v1.3.1 // indirect
 	github.com/otiai10/primes v0.0.0-20180210170552-f6d2a1ba97c4
+	github.com/patcito/monero v0.0.0-20180114122833-b11a914aef1a
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.6.1
 	go.uber.org/zap v1.15.0 // indirect

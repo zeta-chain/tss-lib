@@ -8,6 +8,7 @@ package crypto
 
 import (
 	"crypto/elliptic"
+	"encoding/hex"
 	"math/big"
 	"reflect"
 	"testing"
@@ -17,7 +18,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/binance-chain/tss-lib/common"
-	"github.com/binance-chain/tss-lib/tss"
 )
 
 var (
@@ -102,14 +102,18 @@ func TestECBasePoint2(t *testing.T) {
 func TestGenerateAddressAndImport(t *testing.T) {
 	cv := edwards.Edwards()
 
-	ui := common.GetRandomPositiveInt(tss.EC().Params().N)
+	ui := common.GetRandomPositiveInt(cv.N)
 	px, py := cv.ScalarBaseMult(ui.Bytes())
-	pubSignKey := NewECPointNoCurveCheck(edwards.Edwards(), px, py)
+	pubSignKey, err := NewECPoint(cv, px, py)
+	assert.Nil(t, err)
 
-	ui = common.GetRandomPositiveInt(tss.EC().Params().N)
-	px, py = cv.ScalarBaseMult(ui.Bytes())
-	pubViewKey := NewECPointNoCurveCheck(edwards.Edwards(), px, py)
+	ui2 := common.GetRandomPositiveInt(cv.N)
+	px, py = cv.ScalarBaseMult(ui2.Bytes())
+	pubViewKey := NewECPointNoCurveCheck(cv, px, py)
 	address := GenAddress(pubSignKey, pubViewKey)
+	uii := BigIntToEncodedBytes(ui)
+	uii2 := BigIntToEncodedBytes(ui2)
+	t.Logf("address=%v\n spendkey=%v\n view key=%v\n", address, hex.EncodeToString(uii[:]), hex.EncodeToString(uii2[:]))
 	signKey, viewKey, err := RecoverPubKeys(address)
 	assert.Nil(t, err)
 	s1, err := DecodeGroupElementToECPoints(*signKey)
