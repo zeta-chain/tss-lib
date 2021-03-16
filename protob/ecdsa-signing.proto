@@ -27,11 +27,15 @@ message SignRound1Message {
 /*
  * Represents a P2P message sent to each party during Phase 2 of the GG20 ECDSA TSS signing protocol.
  */
-message SignRound2Message {
+message SignRound2MessageBody {
     bytes c1 = 1;
     bytes c2 = 2;
     repeated bytes proof_bob = 3;
     repeated bytes proof_bob_wc = 4;
+}
+
+message SignRound2Message {
+    repeated SignRound2MessageBody items = 4;
 }
 
 /*

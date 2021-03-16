@@ -43,11 +43,17 @@ func (round *round3) Start() *tss.Error {
 		if j == i {
 			continue
 		}
+
 		// Alice_end
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
 			r2msg := round.temp.signRound2Messages[j].Content().(*SignRound2Message)
-			proofBob, err := r2msg.UnmarshalProofBob()
+			proofBob, err := r2msg.UnmarshalProofBob(i)
+			if err != nil {
+				errChs <- round.WrapError(errorspkg.Wrapf(err, "MtA: UnmarshalProofBob failed"), Pj)
+				return
+			}
+			c1, _, err := r2msg.UnmarshalC(i)
 			if err != nil {
 				errChs <- round.WrapError(errorspkg.Wrapf(err, "MtA: UnmarshalProofBob failed"), Pj)
 				return
@@ -58,7 +64,7 @@ func (round *round3) Start() *tss.Error {
 				round.key.H1j[i],
 				round.key.H2j[i],
 				round.temp.c1Is[j],
-				new(big.Int).SetBytes(r2msg.GetC1()),
+				new(big.Int).SetBytes(c1),
 				round.key.NTildej[i],
 				round.key.PaillierSK)
 			if err != nil {
@@ -72,9 +78,14 @@ func (round *round3) Start() *tss.Error {
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
 			r2msg := round.temp.signRound2Messages[j].Content().(*SignRound2Message)
-			proofBobWC, err := r2msg.UnmarshalProofBobWC()
+			proofBobWC, err := r2msg.UnmarshalProofBobWC(i)
 			if err != nil {
 				errChs <- round.WrapError(errorspkg.Wrapf(err, "MtA: UnmarshalProofBobWC failed"), Pj)
+				return
+			}
+			_, c2, err := r2msg.UnmarshalC(i)
+			if err != nil {
+				errChs <- round.WrapError(errorspkg.Wrapf(err, "MtA: UnmarshalProofBob failed"), Pj)
 				return
 			}
 			muIJ, muIJRec, muIJRand, err := mta.AliceEndWC(
@@ -82,7 +93,7 @@ func (round *round3) Start() *tss.Error {
 				proofBobWC,
 				round.temp.bigWs[j],
 				round.temp.c1Is[j],
-				new(big.Int).SetBytes(r2msg.GetC2()),
+				new(big.Int).SetBytes(c2),
 				round.key.NTildej[i],
 				round.key.H1j[i],
 				round.key.H2j[i],

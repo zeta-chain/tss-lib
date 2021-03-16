@@ -105,18 +105,21 @@ func (round *round2) Start() *tss.Error {
 		return round.WrapError(errors.New("MtA: failed to verify Bob_mid or Bob_mid_wc"), culprits...)
 	}
 	// create and send messages
-	for j, Pj := range round.Parties().IDs() {
+	var items []*SignRound2MessageBody
+	for j := range round.Parties().IDs() {
 		if j == i {
+			items = append(items, nil)
 			continue
 		}
-		r2msg := NewSignRound2Message(
-			Pj, round.PartyID(),
+		item := NewSignRound2MessageBody(
 			round.temp.c1JIs[j],
 			round.temp.pI1JIs[j],
 			round.temp.c2JIs[j],
 			round.temp.pI2JIs[j])
-		round.out <- r2msg
+		items = append(items, item)
 	}
+	r2msg := NewSignRound2Message(round.PartyID(), items)
+	round.out <- r2msg
 	return nil
 }
 
@@ -135,7 +138,7 @@ func (round *round2) Update() (bool, *tss.Error) {
 
 func (round *round2) CanAccept(msg tss.ParsedMessage) bool {
 	if _, ok := msg.Content().(*SignRound2Message); ok {
-		return !msg.IsBroadcast()
+		return msg.IsBroadcast()
 	}
 	return false
 }

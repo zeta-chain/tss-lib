@@ -25,7 +25,7 @@ var _ = []tss.MessageContent{(*SignRound1Message)(nil), (*SignRound2Message)(nil
 
 // ----- //
 
-func NewSignRound1Message1(
+func NewSignRound1Message(
 	from *tss.PartyID,
 	c *big.Int,
 	proofs []*mta.RangeProofAlice, i int, commitment cmt.HashCommitment,
@@ -68,6 +68,9 @@ func (m *SignRound1Message) UnmarshalC() *big.Int {
 }
 
 func (m *SignRound1Message) UnmarshalRangeProofAlice(i int) (*mta.RangeProofAlice, error) {
+	if len(m.GetRangeProofAlice()) < i {
+		return nil, errors.New("not enough members")
+	}
 	return mta.RangeProofAliceFromBytes(m.GetRangeProofAlice()[i].RangeProofAlice)
 }
 
@@ -77,44 +80,61 @@ func (m *SignRound1Message) UnmarshalCommitment() *big.Int {
 
 // ----- //
 
-func NewSignRound2Message(
-	to, from *tss.PartyID,
+func NewSignRound2MessageBody(
 	c1JI *big.Int,
 	pi1JI *mta.ProofBob,
 	c2JI *big.Int,
 	pi2JI *mta.ProofBobWC,
-) tss.ParsedMessage {
-	meta := tss.MessageRouting{
-		From:        from,
-		To:          []*tss.PartyID{to},
-		IsBroadcast: false,
-	}
+) *SignRound2MessageBody {
 	pfBob := pi1JI.Bytes()
 	pfBobWC := pi2JI.Bytes()
-	content := &SignRound2Message{
+	content := &SignRound2MessageBody{
 		C1:         c1JI.Bytes(),
 		C2:         c2JI.Bytes(),
 		ProofBob:   pfBob[:],
 		ProofBobWc: pfBobWC[:],
+	}
+	return content
+}
+
+func NewSignRound2Message(
+	from *tss.PartyID,
+	items []*SignRound2MessageBody,
+) tss.ParsedMessage {
+	meta := tss.MessageRouting{
+		From:        from,
+		IsBroadcast: true,
+	}
+	content := &SignRound2Message{
+		Items: items,
 	}
 	msg := tss.NewMessageWrapper(meta, content)
 	return tss.NewMessage(meta, content, msg)
 }
 
 func (m *SignRound2Message) ValidateBasic() bool {
-	return m != nil &&
-		common.NonEmptyBytes(m.GetC1()) &&
-		common.NonEmptyBytes(m.GetC2()) &&
-		common.NonEmptyMultiBytes(m.GetProofBob(), mta.ProofBobBytesParts) &&
-		common.NonEmptyMultiBytes(m.GetProofBobWc(), mta.ProofBobWCBytesParts)
+	return m != nil && len(m.GetItems()) > 0
 }
 
-func (m *SignRound2Message) UnmarshalProofBob() (*mta.ProofBob, error) {
-	return mta.ProofBobFromBytes(m.GetProofBob())
+func (m *SignRound2Message) UnmarshalProofBob(i int) (*mta.ProofBob, error) {
+	if len(m.GetItems()) < i {
+		return nil, errors.New("not enough members")
+	}
+	return mta.ProofBobFromBytes(m.GetItems()[i].GetProofBob())
 }
 
-func (m *SignRound2Message) UnmarshalProofBobWC() (*mta.ProofBobWC, error) {
-	return mta.ProofBobWCFromBytes(m.GetProofBobWc())
+func (m *SignRound2Message) UnmarshalProofBobWC(i int) (*mta.ProofBobWC, error) {
+	if len(m.GetItems()) < i {
+		return nil, errors.New("not enough members")
+	}
+	return mta.ProofBobWCFromBytes(m.GetItems()[i].GetProofBobWc())
+}
+
+func (m *SignRound2Message) UnmarshalC(i int) ([]byte, []byte, error) {
+	if len(m.GetItems()) < i {
+		return nil, nil, errors.New("not enough members")
+	}
+	return m.GetItems()[i].GetC1(), m.GetItems()[i].GetC2(), nil
 }
 
 // ----- //
