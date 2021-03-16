@@ -19,14 +19,13 @@ import (
 	"github.com/binance-chain/tss-lib/tss"
 )
 
-var (
-	zero = big.NewInt(0)
-)
+var zero = big.NewInt(0)
 
 // round 1 represents round 1 of the signing part of the GG18 ECDSA TSS spec (Gennaro, Goldfeder; 2018)
 func newRound1(params *tss.Parameters, key *keygen.LocalPartySaveData, data *SignatureData, temp *localTempData, out chan<- tss.Message, end chan<- *SignatureData) tss.Round {
 	return &round1{
-		&base{params, key, data, temp, out, end, make([]bool, len(params.Parties().IDs())), false, 1}}
+		&base{params, key, data, temp, out, end, make([]bool, len(params.Parties().IDs())), false, 1},
+	}
 }
 
 func (round *round1) Start() *tss.Error {
@@ -80,7 +79,8 @@ func (round *round1) Start() *tss.Error {
 		round.temp.r7AbortData.KRandI = rA.Bytes()
 	}
 
-	for j, Pj := range round.Parties().IDs() {
+	round.temp.rangeProofs = make([]*mta.RangeProofAlice, len(round.Parties().IDs()))
+	for j, _ := range round.Parties().IDs() {
 		if j == i {
 			continue
 		}
@@ -88,12 +88,13 @@ func (round *round1) Start() *tss.Error {
 		if err != nil {
 			return round.WrapError(fmt.Errorf("failed to init mta: %v", err))
 		}
-		r1msg1 := NewSignRound1Message1(Pj, round.PartyID(), cA, pi)
-		round.temp.signRound1Message1s[i] = r1msg1
+		round.temp.rangeProofs[j] = pi
 		round.temp.c1Is[j] = cA
-		round.out <- r1msg1
 	}
 
+	r1msg1 := NewSignRound1Message1(round.PartyID(), cA, round.temp.rangeProofs, i)
+	round.temp.signRound1Message1s[i] = r1msg1
+	round.out <- r1msg1
 	r1msg2 := NewSignRound1Message2(round.PartyID(), cmt.C)
 	round.temp.signRound1Message2s[i] = r1msg2
 	round.out <- r1msg2
@@ -119,7 +120,7 @@ func (round *round1) Update() (bool, *tss.Error) {
 
 func (round *round1) CanAccept(msg tss.ParsedMessage) bool {
 	if _, ok := msg.Content().(*SignRound1Message1); ok {
-		return !msg.IsBroadcast()
+		return msg.IsBroadcast()
 	}
 	if _, ok := msg.Content().(*SignRound1Message2); ok {
 		return msg.IsBroadcast()

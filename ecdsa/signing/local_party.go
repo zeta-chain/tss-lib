@@ -21,8 +21,10 @@ import (
 
 // Implements Party
 // Implements Stringer
-var _ tss.Party = (*LocalParty)(nil)
-var _ fmt.Stringer = (*LocalParty)(nil)
+var (
+	_ tss.Party    = (*LocalParty)(nil)
+	_ fmt.Stringer = (*LocalParty)(nil)
+)
 
 type (
 	LocalParty struct {
@@ -60,10 +62,11 @@ type (
 		deltaI,
 		sigmaI,
 		gammaI *big.Int
-		c1Is     []*big.Int
-		bigWs    []*crypto.ECPoint
-		gammaIG  *crypto.ECPoint
-		deCommit cmt.HashDeCommitment
+		c1Is        []*big.Int
+		bigWs       []*crypto.ECPoint
+		gammaIG     *crypto.ECPoint
+		deCommit    cmt.HashDeCommitment
+		rangeProofs []*mta.RangeProofAlice
 
 		// round 2
 		betas, // return value of Bob_mid

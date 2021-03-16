@@ -20,36 +20,35 @@ import (
 
 // These messages were generated from Protocol Buffers definitions into ecdsa-signing.pb.go
 
-var (
-	// Ensure that signing messages implement ValidateBasic
-	_ = []tss.MessageContent{
-		(*SignRound1Message1)(nil),
-		(*SignRound1Message2)(nil),
-		(*SignRound2Message)(nil),
-		(*SignRound3Message)(nil),
-		(*SignRound4Message)(nil),
-		(*SignRound5Message)(nil),
-		(*SignRound6Message)(nil),
-		(*SignRound7Message)(nil),
-	}
-)
+// Ensure that signing messages implement ValidateBasic
+var _ = []tss.MessageContent{(*SignRound1Message1)(nil), (*SignRound1Message2)(nil), (*SignRound2Message)(nil), (*SignRound3Message)(nil), (*SignRound4Message)(nil), (*SignRound5Message)(nil), (*SignRound6Message)(nil), (*SignRound7Message)(nil)}
 
 // ----- //
 
 func NewSignRound1Message1(
-	to, from *tss.PartyID,
+	from *tss.PartyID,
 	c *big.Int,
-	proof *mta.RangeProofAlice,
+	proofs []*mta.RangeProofAlice, i int,
 ) tss.ParsedMessage {
 	meta := tss.MessageRouting{
 		From:        from,
-		To:          []*tss.PartyID{to},
-		IsBroadcast: false,
+		IsBroadcast: true,
 	}
-	pfBz := proof.Bytes()
+	var sentProofs []*RangeProof
+	for j, el := range proofs {
+		// we skip ourselves
+		if j == i {
+			sentProofs = append(sentProofs, nil)
+			continue
+		}
+		var rgProof RangeProof
+		out := el.Bytes()
+		rgProof.RangeProofAlice = out[:]
+		sentProofs = append(sentProofs, &rgProof)
+	}
 	content := &SignRound1Message1{
 		C:               c.Bytes(),
-		RangeProofAlice: pfBz[:],
+		RangeProofAlice: sentProofs,
 	}
 	msg := tss.NewMessageWrapper(meta, content)
 	return tss.NewMessage(meta, content, msg)
@@ -58,15 +57,15 @@ func NewSignRound1Message1(
 func (m *SignRound1Message1) ValidateBasic() bool {
 	return m != nil &&
 		common.NonEmptyBytes(m.GetC()) &&
-		common.NonEmptyMultiBytes(m.GetRangeProofAlice(), mta.RangeProofAliceBytesParts)
+		len(m.GetRangeProofAlice()) > 1
 }
 
 func (m *SignRound1Message1) UnmarshalC() *big.Int {
 	return new(big.Int).SetBytes(m.GetC())
 }
 
-func (m *SignRound1Message1) UnmarshalRangeProofAlice() (*mta.RangeProofAlice, error) {
-	return mta.RangeProofAliceFromBytes(m.GetRangeProofAlice())
+func (m *SignRound1Message1) UnmarshalRangeProofAlice(i int) (*mta.RangeProofAlice, error) {
+	return mta.RangeProofAliceFromBytes(m.GetRangeProofAlice()[i].RangeProofAlice)
 }
 
 // ----- //
