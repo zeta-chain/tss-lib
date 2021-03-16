@@ -40,7 +40,7 @@ func (round *round5) Start() *tss.Error {
 		if j == i {
 			continue
 		}
-		r1msg2 := round.temp.signRound1Message2s[j].Content().(*SignRound1Message2)
+		r1msg2 := round.temp.signRound1Messages[j].Content().(*SignRound1Message)
 		r3msg := round.temp.signRound3Messages[j].Content().(*SignRound3Message)
 		r4msg := round.temp.signRound4Messages[j].Content().(*SignRound4Message)
 

@@ -21,14 +21,14 @@ import (
 // These messages were generated from Protocol Buffers definitions into ecdsa-signing.pb.go
 
 // Ensure that signing messages implement ValidateBasic
-var _ = []tss.MessageContent{(*SignRound1Message1)(nil), (*SignRound1Message2)(nil), (*SignRound2Message)(nil), (*SignRound3Message)(nil), (*SignRound4Message)(nil), (*SignRound5Message)(nil), (*SignRound6Message)(nil), (*SignRound7Message)(nil)}
+var _ = []tss.MessageContent{(*SignRound1Message)(nil), (*SignRound2Message)(nil), (*SignRound3Message)(nil), (*SignRound4Message)(nil), (*SignRound5Message)(nil), (*SignRound6Message)(nil), (*SignRound7Message)(nil)}
 
 // ----- //
 
 func NewSignRound1Message1(
 	from *tss.PartyID,
 	c *big.Int,
-	proofs []*mta.RangeProofAlice, i int,
+	proofs []*mta.RangeProofAlice, i int, commitment cmt.HashCommitment,
 ) tss.ParsedMessage {
 	meta := tss.MessageRouting{
 		From:        from,
@@ -46,51 +46,32 @@ func NewSignRound1Message1(
 		rgProof.RangeProofAlice = out[:]
 		sentProofs = append(sentProofs, &rgProof)
 	}
-	content := &SignRound1Message1{
+	content := &SignRound1Message{
 		C:               c.Bytes(),
 		RangeProofAlice: sentProofs,
+		Commitment:      commitment.Bytes(),
 	}
 	msg := tss.NewMessageWrapper(meta, content)
 	return tss.NewMessage(meta, content, msg)
 }
 
-func (m *SignRound1Message1) ValidateBasic() bool {
+func (m *SignRound1Message) ValidateBasic() bool {
 	return m != nil &&
 		common.NonEmptyBytes(m.GetC()) &&
-		len(m.GetRangeProofAlice()) > 1
-}
-
-func (m *SignRound1Message1) UnmarshalC() *big.Int {
-	return new(big.Int).SetBytes(m.GetC())
-}
-
-func (m *SignRound1Message1) UnmarshalRangeProofAlice(i int) (*mta.RangeProofAlice, error) {
-	return mta.RangeProofAliceFromBytes(m.GetRangeProofAlice()[i].RangeProofAlice)
-}
-
-// ----- //
-
-func NewSignRound1Message2(
-	from *tss.PartyID,
-	commitment cmt.HashCommitment,
-) tss.ParsedMessage {
-	meta := tss.MessageRouting{
-		From:        from,
-		IsBroadcast: true,
-	}
-	content := &SignRound1Message2{
-		Commitment: commitment.Bytes(),
-	}
-	msg := tss.NewMessageWrapper(meta, content)
-	return tss.NewMessage(meta, content, msg)
-}
-
-func (m *SignRound1Message2) ValidateBasic() bool {
-	return m.Commitment != nil &&
+		len(m.GetRangeProofAlice()) > 1 &&
+		m.Commitment != nil &&
 		common.NonEmptyBytes(m.GetCommitment())
 }
 
-func (m *SignRound1Message2) UnmarshalCommitment() *big.Int {
+func (m *SignRound1Message) UnmarshalC() *big.Int {
+	return new(big.Int).SetBytes(m.GetC())
+}
+
+func (m *SignRound1Message) UnmarshalRangeProofAlice(i int) (*mta.RangeProofAlice, error) {
+	return mta.RangeProofAliceFromBytes(m.GetRangeProofAlice()[i].RangeProofAlice)
+}
+
+func (m *SignRound1Message) UnmarshalCommitment() *big.Int {
 	return new(big.Int).SetBytes(m.GetCommitment())
 }
 

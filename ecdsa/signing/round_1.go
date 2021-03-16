@@ -92,25 +92,18 @@ func (round *round1) Start() *tss.Error {
 		round.temp.c1Is[j] = cA
 	}
 
-	r1msg1 := NewSignRound1Message1(round.PartyID(), cA, round.temp.rangeProofs, i)
-	round.temp.signRound1Message1s[i] = r1msg1
+	r1msg1 := NewSignRound1Message1(round.PartyID(), cA, round.temp.rangeProofs, i, cmt.C)
+	round.temp.signRound1Messages[i] = r1msg1
 	round.out <- r1msg1
-	r1msg2 := NewSignRound1Message2(round.PartyID(), cmt.C)
-	round.temp.signRound1Message2s[i] = r1msg2
-	round.out <- r1msg2
 	return nil
 }
 
 func (round *round1) Update() (bool, *tss.Error) {
-	for j, msg1 := range round.temp.signRound1Message1s {
+	for j, msg1 := range round.temp.signRound1Messages {
 		if round.ok[j] {
 			continue
 		}
 		if msg1 == nil || !round.CanAccept(msg1) {
-			return false, nil
-		}
-		msg2 := round.temp.signRound1Message2s[j]
-		if msg2 == nil || !round.CanAccept(msg2) {
 			return false, nil
 		}
 		round.ok[j] = true
@@ -119,10 +112,7 @@ func (round *round1) Update() (bool, *tss.Error) {
 }
 
 func (round *round1) CanAccept(msg tss.ParsedMessage) bool {
-	if _, ok := msg.Content().(*SignRound1Message1); ok {
-		return msg.IsBroadcast()
-	}
-	if _, ok := msg.Content().(*SignRound1Message2); ok {
+	if _, ok := msg.Content().(*SignRound1Message); ok {
 		return msg.IsBroadcast()
 	}
 	return false

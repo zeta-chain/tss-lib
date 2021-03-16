@@ -37,7 +37,7 @@ func (round *round2) Start() *tss.Error {
 		// Bob_mid
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
-			r1msg := round.temp.signRound1Message1s[j].Content().(*SignRound1Message1)
+			r1msg := round.temp.signRound1Messages[j].Content().(*SignRound1Message)
 			rangeProofAliceJ, err := r1msg.UnmarshalRangeProofAlice(i)
 			if err != nil {
 				errChs <- round.WrapError(errorspkg.Wrapf(err, "MtA: UnmarshalRangeProofAlice failed"), Pj)
@@ -67,7 +67,7 @@ func (round *round2) Start() *tss.Error {
 		// Bob_mid_wc
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
-			r1msg := round.temp.signRound1Message1s[j].Content().(*SignRound1Message1)
+			r1msg := round.temp.signRound1Messages[j].Content().(*SignRound1Message)
 			rangeProofAliceJ, err := r1msg.UnmarshalRangeProofAlice(i)
 			if err != nil {
 				errChs <- round.WrapError(errorspkg.Wrapf(err, "MtA: UnmarshalRangeProofAlice failed"), Pj)

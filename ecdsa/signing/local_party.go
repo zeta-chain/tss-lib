@@ -41,8 +41,7 @@ type (
 	}
 
 	localMessageStore struct {
-		signRound1Message1s,
-		signRound1Message2s,
+		signRound1Messages,
 		signRound2Messages,
 		signRound3Messages,
 		signRound4Messages,
@@ -113,8 +112,7 @@ func NewLocalParty(
 		end:       end,
 	}
 	// msgs init
-	p.temp.signRound1Message1s = make([]tss.ParsedMessage, partyCount)
-	p.temp.signRound1Message2s = make([]tss.ParsedMessage, partyCount)
+	p.temp.signRound1Messages = make([]tss.ParsedMessage, partyCount)
 	p.temp.signRound2Messages = make([]tss.ParsedMessage, partyCount)
 	p.temp.signRound3Messages = make([]tss.ParsedMessage, partyCount)
 	p.temp.signRound4Messages = make([]tss.ParsedMessage, partyCount)
@@ -198,10 +196,8 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 	// switch/case is necessary to store any messages beyond current round
 	// this does not handle message replays. we expect the caller to apply replay and spoofing protection.
 	switch msg.Content().(type) {
-	case *SignRound1Message1:
-		p.temp.signRound1Message1s[fromPIdx] = msg
-	case *SignRound1Message2:
-		p.temp.signRound1Message2s[fromPIdx] = msg
+	case *SignRound1Message:
+		p.temp.signRound1Messages[fromPIdx] = msg
 	case *SignRound2Message:
 		p.temp.signRound2Messages[fromPIdx] = msg
 	case *SignRound3Message:
