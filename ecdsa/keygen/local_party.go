@@ -13,14 +13,17 @@ import (
 
 	"github.com/binance-chain/tss-lib/common"
 	cmt "github.com/binance-chain/tss-lib/crypto/commitments"
+	"github.com/binance-chain/tss-lib/crypto/paillier"
 	"github.com/binance-chain/tss-lib/crypto/vss"
 	"github.com/binance-chain/tss-lib/tss"
 )
 
 // Implements Party
 // Implements Stringer
-var _ tss.Party = (*LocalParty)(nil)
-var _ fmt.Stringer = (*LocalParty)(nil)
+var (
+	_ tss.Party    = (*LocalParty)(nil)
+	_ fmt.Stringer = (*LocalParty)(nil)
+)
 
 type (
 	LocalParty struct {
@@ -37,10 +40,11 @@ type (
 
 	localMessageStore struct {
 		kgRound1Messages,
-		kgRound2Message1s,
-		kgRound2Message2s,
+		kgRound2Messages,
 		kgRound3Messages []tss.ParsedMessage
 	}
+	// we define the struct that we received the encrypted share
+	recvEncryptedShare [][]byte
 
 	localTempData struct {
 		localMessageStore
@@ -51,6 +55,13 @@ type (
 		vs            vss.Vs
 		shares        vss.Shares
 		deCommitPolyG cmt.HashDeCommitment
+		// round2 encrypted share for sending
+		broadcastEncryptedShare [][]byte
+		// the encryptedShares for all the peers
+		encryptedShares []paillier.EncryptedMsg
+		// the received encrypted share
+		recvEncryptedShares []recvEncryptedShare
+		vssAbortData        KGRound3Message_AbortData
 	}
 )
 
@@ -83,8 +94,7 @@ func NewLocalParty(
 	}
 	// msgs init
 	p.temp.kgRound1Messages = make([]tss.ParsedMessage, partyCount)
-	p.temp.kgRound2Message1s = make([]tss.ParsedMessage, partyCount)
-	p.temp.kgRound2Message2s = make([]tss.ParsedMessage, partyCount)
+	p.temp.kgRound2Messages = make([]tss.ParsedMessage, partyCount)
 	p.temp.kgRound3Messages = make([]tss.ParsedMessage, partyCount)
 	// temp data init
 	p.temp.KGCs = make([]cmt.HashCommitment, partyCount)
@@ -135,10 +145,8 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 	switch msg.Content().(type) {
 	case *KGRound1Message:
 		p.temp.kgRound1Messages[fromPIdx] = msg
-	case *KGRound2Message1:
-		p.temp.kgRound2Message1s[fromPIdx] = msg
-	case *KGRound2Message2:
-		p.temp.kgRound2Message2s[fromPIdx] = msg
+	case *KGRound2Message:
+		p.temp.kgRound2Messages[fromPIdx] = msg
 	case *KGRound3Message:
 		p.temp.kgRound3Messages[fromPIdx] = msg
 	default: // unrecognised message, just ignore!

@@ -976,22 +976,25 @@ func file_protob_ecdsa_signing_proto_rawDescGZIP() []byte {
 	return file_protob_ecdsa_signing_proto_rawDescData
 }
 
-var file_protob_ecdsa_signing_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
-var file_protob_ecdsa_signing_proto_goTypes = []interface{}{
-	(*RangeProof)(nil),                    // 0: RangeProof
-	(*SignRound1Message)(nil),             // 1: SignRound1Message
-	(*SignRound2MessageBody)(nil),         // 2: SignRound2MessageBody
-	(*SignRound2Message)(nil),             // 3: SignRound2Message
-	(*SignRound3Message)(nil),             // 4: SignRound3Message
-	(*SignRound4Message)(nil),             // 5: SignRound4Message
-	(*SignRound5Message)(nil),             // 6: SignRound5Message
-	(*SignRound6Message)(nil),             // 7: SignRound6Message
-	(*SignRound7Message)(nil),             // 8: SignRound7Message
-	(*SignRound6Message_SuccessData)(nil), // 9: SignRound6Message.SuccessData
-	(*SignRound6Message_AbortData)(nil),   // 10: SignRound6Message.AbortData
-	(*SignRound7Message_AbortData)(nil),   // 11: SignRound7Message.AbortData
-	(*common.ECPoint)(nil),                // 12: ECPoint
-}
+var (
+	file_protob_ecdsa_signing_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+	file_protob_ecdsa_signing_proto_goTypes  = []interface{}{
+		(*RangeProof)(nil),                    // 0: RangeProof
+		(*SignRound1Message)(nil),             // 1: SignRound1Message
+		(*SignRound2MessageBody)(nil),         // 2: SignRound2MessageBody
+		(*SignRound2Message)(nil),             // 3: SignRound2Message
+		(*SignRound3Message)(nil),             // 4: SignRound3Message
+		(*SignRound4Message)(nil),             // 5: SignRound4Message
+		(*SignRound5Message)(nil),             // 6: SignRound5Message
+		(*SignRound6Message)(nil),             // 7: SignRound6Message
+		(*SignRound7Message)(nil),             // 8: SignRound7Message
+		(*SignRound6Message_SuccessData)(nil), // 9: SignRound6Message.SuccessData
+		(*SignRound6Message_AbortData)(nil),   // 10: SignRound6Message.AbortData
+		(*SignRound7Message_AbortData)(nil),   // 11: SignRound7Message.AbortData
+		(*common.ECPoint)(nil),                // 12: ECPoint
+	}
+)
+
 var file_protob_ecdsa_signing_proto_depIdxs = []int32{
 	0,  // 0: SignRound1Message.range_proof_alice:type_name -> RangeProof
 	2,  // 1: SignRound2Message.items:type_name -> SignRound2MessageBody
