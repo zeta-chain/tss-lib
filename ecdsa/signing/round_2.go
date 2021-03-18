@@ -34,11 +34,13 @@ func (round *round2) Start() *tss.Error {
 		if j == i {
 			continue
 		}
+
+		witnessPartyID := (j + 1) % len(round.Parties().IDs())
 		// Bob_mid
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
 			r1msg := round.temp.signRound1Messages[j].Content().(*SignRound1Message)
-			rangeProofAliceJ, err := r1msg.UnmarshalRangeProofAlice(i)
+			rangeProofAliceJ, err := r1msg.UnmarshalRangeProofAlice()
 			if err != nil {
 				errChs <- round.WrapError(errorspkg.Wrapf(err, "MtA: UnmarshalRangeProofAlice failed"), Pj)
 				return
@@ -51,9 +53,9 @@ func (round *round2) Start() *tss.Error {
 				round.key.NTildej[j],
 				round.key.H1j[j],
 				round.key.H2j[j],
-				round.key.NTildej[i],
-				round.key.H1j[i],
-				round.key.H2j[i])
+				round.key.NTildej[witnessPartyID],
+				round.key.H1j[witnessPartyID],
+				round.key.H2j[witnessPartyID])
 			if err != nil {
 				errChs <- round.WrapError(err, Pj)
 				return
@@ -68,11 +70,12 @@ func (round *round2) Start() *tss.Error {
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
 			r1msg := round.temp.signRound1Messages[j].Content().(*SignRound1Message)
-			rangeProofAliceJ, err := r1msg.UnmarshalRangeProofAlice(i)
+			rangeProofAliceJ, err := r1msg.UnmarshalRangeProofAlice()
 			if err != nil {
 				errChs <- round.WrapError(errorspkg.Wrapf(err, "MtA: UnmarshalRangeProofAlice failed"), Pj)
 				return
 			}
+
 			vJI, c2JI, pi2JI, err := mta.BobMidWC(
 				round.key.PaillierPKs[j],
 				rangeProofAliceJ,
@@ -81,9 +84,9 @@ func (round *round2) Start() *tss.Error {
 				round.key.NTildej[j],
 				round.key.H1j[j],
 				round.key.H2j[j],
-				round.key.NTildej[i],
-				round.key.H1j[i],
-				round.key.H2j[i],
+				round.key.NTildej[witnessPartyID],
+				round.key.H1j[witnessPartyID],
+				round.key.H2j[witnessPartyID],
 				round.temp.bigWs[i])
 			if err != nil {
 				errChs <- round.WrapError(err, Pj)
@@ -145,5 +148,5 @@ func (round *round2) CanAccept(msg tss.ParsedMessage) bool {
 
 func (round *round2) NextRound() tss.Round {
 	round.started = false
-	return &round3{round}
+	return &round3{round, false}
 }

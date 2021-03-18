@@ -28,27 +28,17 @@ var _ = []tss.MessageContent{(*SignRound1Message)(nil), (*SignRound2Message)(nil
 func NewSignRound1Message(
 	from *tss.PartyID,
 	c *big.Int,
-	proofs []*mta.RangeProofAlice, i int, commitment cmt.HashCommitment,
+	proof *mta.RangeProofAlice, commitment cmt.HashCommitment,
 ) tss.ParsedMessage {
 	meta := tss.MessageRouting{
 		From:        from,
 		IsBroadcast: true,
 	}
-	var sentProofs []*RangeProof
-	for j, el := range proofs {
-		// we skip ourselves
-		if j == i {
-			sentProofs = append(sentProofs, nil)
-			continue
-		}
-		var rgProof RangeProof
-		out := el.Bytes()
-		rgProof.RangeProofAlice = out[:]
-		sentProofs = append(sentProofs, &rgProof)
-	}
+
+	out := proof.Bytes()
 	content := &SignRound1Message{
 		C:               c.Bytes(),
-		RangeProofAlice: sentProofs,
+		RangeProofAlice: out[:],
 		Commitment:      commitment.Bytes(),
 	}
 	msg := tss.NewMessageWrapper(meta, content)
@@ -58,20 +48,15 @@ func NewSignRound1Message(
 func (m *SignRound1Message) ValidateBasic() bool {
 	return m != nil &&
 		common.NonEmptyBytes(m.GetC()) &&
-		len(m.GetRangeProofAlice()) > 1 &&
-		m.Commitment != nil &&
-		common.NonEmptyBytes(m.GetCommitment())
+		common.NonEmptyMultiBytes(m.GetRangeProofAlice(), mta.RangeProofAliceBytesParts)
 }
 
 func (m *SignRound1Message) UnmarshalC() *big.Int {
 	return new(big.Int).SetBytes(m.GetC())
 }
 
-func (m *SignRound1Message) UnmarshalRangeProofAlice(i int) (*mta.RangeProofAlice, error) {
-	if len(m.GetRangeProofAlice()) < i {
-		return nil, errors.New("not enough members")
-	}
-	return mta.RangeProofAliceFromBytes(m.GetRangeProofAlice()[i].RangeProofAlice)
+func (m *SignRound1Message) UnmarshalRangeProofAlice() (*mta.RangeProofAlice, error) {
+	return mta.RangeProofAliceFromBytes(m.GetRangeProofAlice())
 }
 
 func (m *SignRound1Message) UnmarshalCommitment() *big.Int {
@@ -139,7 +124,7 @@ func (m *SignRound2Message) UnmarshalC(i int) ([]byte, []byte, error) {
 
 // ----- //
 
-func NewSignRound3Message(
+func NewSignRound3MessageSuccess(
 	from *tss.PartyID,
 	deltaI *big.Int,
 	TI *crypto.ECPoint,
@@ -149,7 +134,7 @@ func NewSignRound3Message(
 		From:        from,
 		IsBroadcast: true,
 	}
-	content := &SignRound3Message{
+	successData := &SignRound3Message_SignRound3MessageSuccess{
 		DeltaI: deltaI.Bytes(),
 		TI: &common.ECPoint{
 			X: TI.X().Bytes(),
@@ -162,51 +147,87 @@ func NewSignRound3Message(
 		TProofT: tProof.T.Bytes(),
 		TProofU: tProof.U.Bytes(),
 	}
+	content := &SignRound3Message{
+		Content: &SignRound3Message_Success{
+			Success: successData,
+		},
+	}
+	msg := tss.NewMessageWrapper(meta, content)
+	return tss.NewMessage(meta, content, msg)
+}
+
+func NewSignRound3MessageAbort(
+	from *tss.PartyID,
+	abortData *SignRound3Message_AbortData,
+) tss.ParsedMessage {
+	meta := tss.MessageRouting{
+		From:        from,
+		IsBroadcast: true,
+	}
+
+	content := &SignRound3Message{
+		Content: &SignRound3Message_Abort{
+			Abort: abortData,
+		},
+	}
 	msg := tss.NewMessageWrapper(meta, content)
 	return tss.NewMessage(meta, content, msg)
 }
 
 func (m *SignRound3Message) ValidateBasic() bool {
-	if m == nil ||
-		m.GetTI() == nil ||
-		!m.GetTI().ValidateBasic() ||
-		!common.NonEmptyBytes(m.GetDeltaI()) ||
-		!common.NonEmptyBytes(m.GetTProofT()) ||
-		!common.NonEmptyBytes(m.GetTProofU()) {
+	if m == nil || m.GetContent() == nil {
 		return false
 	}
-	TI, err := m.UnmarshalTI()
-	if err != nil {
+	switch c := m.GetContent().(type) {
+	case *SignRound3Message_Success:
+		if c.Success == nil ||
+			c.Success.GetTI() == nil ||
+			!c.Success.GetTI().ValidateBasic() ||
+			!common.NonEmptyBytes(c.Success.GetDeltaI()) ||
+			!common.NonEmptyBytes(c.Success.GetTProofT()) ||
+			!common.NonEmptyBytes(c.Success.GetTProofU()) {
+			return false
+		}
+		TI, err := c.UnmarshalTI()
+		if err != nil {
+			return false
+		}
+		tProof, err := c.UnmarshalTProof()
+		if err != nil {
+			return false
+		}
+		// we have everything we need to validate the TProof here!
+		basePoint2, err := crypto.ECBasePoint2(tss.EC())
+		if err != nil {
+			return false
+		}
+		return TI.ValidateBasic() && tProof.Verify(TI, basePoint2)
+	case *SignRound3Message_Abort:
+		if c.Abort == nil || len(c.Abort.GetItem()) == 0 {
+			return false
+		}
+		return true
+	default:
 		return false
 	}
-	tProof, err := m.UnmarshalTProof()
-	if err != nil {
-		return false
-	}
-	// we have everything we need to validate the TProof here!
-	basePoint2, err := crypto.ECBasePoint2(tss.EC())
-	if err != nil {
-		return false
-	}
-	return TI.ValidateBasic() && tProof.Verify(TI, basePoint2)
 }
 
-func (m *SignRound3Message) UnmarshalTI() (*crypto.ECPoint, error) {
-	if m.GetTI() == nil || !m.GetTI().ValidateBasic() {
+func (m *SignRound3Message_Success) UnmarshalTI() (*crypto.ECPoint, error) {
+	if m.Success.GetTI() == nil || !m.Success.GetTI().ValidateBasic() {
 		return nil, errors.New("UnmarshalTI() X or Y coord is nil or did not validate")
 	}
-	return crypto.NewECPointFromProtobuf(m.GetTI())
+	return crypto.NewECPointFromProtobuf(m.Success.GetTI())
 }
 
-func (m *SignRound3Message) UnmarshalTProof() (*zkp.TProof, error) {
-	alpha, err := crypto.NewECPointFromProtobuf(m.GetTProofAlpha())
+func (m *SignRound3Message_Success) UnmarshalTProof() (*zkp.TProof, error) {
+	alpha, err := crypto.NewECPointFromProtobuf(m.Success.GetTProofAlpha())
 	if err != nil {
 		return nil, err
 	}
 	return &zkp.TProof{
 		Alpha: alpha,
-		T:     new(big.Int).SetBytes(m.GetTProofT()),
-		U:     new(big.Int).SetBytes(m.GetTProofU()),
+		T:     new(big.Int).SetBytes(m.Success.GetTProofT()),
+		U:     new(big.Int).SetBytes(m.Success.GetTProofU()),
 	}, nil
 }
 

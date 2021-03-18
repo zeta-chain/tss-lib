@@ -61,11 +61,11 @@ type (
 		deltaI,
 		sigmaI,
 		gammaI *big.Int
-		c1Is        []*big.Int
-		bigWs       []*crypto.ECPoint
-		gammaIG     *crypto.ECPoint
-		deCommit    cmt.HashDeCommitment
-		rangeProofs []*mta.RangeProofAlice
+		c1Is       *big.Int
+		bigWs      []*crypto.ECPoint
+		gammaIG    *crypto.ECPoint
+		deCommit   cmt.HashDeCommitment
+		rangeProof *mta.RangeProofAlice
 
 		// round 2
 		betas, // return value of Bob_mid
@@ -78,6 +78,8 @@ type (
 		// round 3
 		lI *big.Int
 
+		// round4
+		abortMta SignRound3Message_AbortData
 		// round 5
 		bigGammaJs  []*crypto.ECPoint
 		r5AbortData SignRound6Message_AbortData
@@ -121,7 +123,6 @@ func NewLocalParty(
 	p.temp.signRound7Messages = make([]tss.ParsedMessage, partyCount)
 	// temp data init
 	p.temp.m = msg
-	p.temp.c1Is = make([]*big.Int, partyCount)
 	p.temp.bigWs = make([]*crypto.ECPoint, partyCount)
 	p.temp.betas = make([]*big.Int, partyCount)
 	p.temp.c1JIs = make([]*big.Int, partyCount)

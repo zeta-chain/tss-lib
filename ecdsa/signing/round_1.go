@@ -68,6 +68,7 @@ func (round *round1) Start() *tss.Error {
 		return round.WrapError(err, Pi)
 	}
 
+	witnessPartyID := (i + 1) % len(round.Parties().IDs())
 	// set "k"-related temporary variables, also used for identified aborts later in the protocol
 	{
 		kIBz := kI.Bytes()
@@ -79,20 +80,14 @@ func (round *round1) Start() *tss.Error {
 		round.temp.r7AbortData.KRandI = rA.Bytes()
 	}
 
-	round.temp.rangeProofs = make([]*mta.RangeProofAlice, len(round.Parties().IDs()))
-	for j, _ := range round.Parties().IDs() {
-		if j == i {
-			continue
-		}
-		pi, err := mta.AliceInit(paiPK, kI, cA, rA, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j])
-		if err != nil {
-			return round.WrapError(fmt.Errorf("failed to init mta: %v", err))
-		}
-		round.temp.rangeProofs[j] = pi
-		round.temp.c1Is[j] = cA
+	pi, err := mta.AliceInit(paiPK, kI, cA, rA, round.key.NTildej[witnessPartyID], round.key.H1j[witnessPartyID], round.key.H2j[witnessPartyID])
+	if err != nil {
+		return round.WrapError(fmt.Errorf("failed to init mta: %v", err))
 	}
+	round.temp.rangeProof = pi
+	round.temp.c1Is = cA
 
-	r1msg1 := NewSignRound1Message(round.PartyID(), cA, round.temp.rangeProofs, i, cmt.C)
+	r1msg1 := NewSignRound1Message(round.PartyID(), cA, round.temp.rangeProof, cmt.C)
 	round.temp.signRound1Messages[i] = r1msg1
 	round.out <- r1msg1
 	return nil
