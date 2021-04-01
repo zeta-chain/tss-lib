@@ -28,6 +28,7 @@ type (
 		newParties    *PeerContext
 		newPartyCount int
 		newThreshold  int
+		amOldParty    bool
 	}
 )
 
@@ -91,13 +92,14 @@ func (params *Parameters) UNSAFE_setKGIgnoreH1H2Dupes(unsafeKGIgnoreH1H2Dupes bo
 // ----- //
 
 // Exported, used in `tss` client
-func NewReSharingParameters(ctx, newCtx *PeerContext, partyID *PartyID, partyCount, threshold, newPartyCount, newThreshold int) *ReSharingParameters {
+func NewReSharingParameters(ctx, newCtx *PeerContext, partyID *PartyID, partyCount, threshold, newPartyCount, newThreshold int, amOldParty bool) *ReSharingParameters {
 	params := NewParameters(ctx, partyID, partyCount, threshold)
 	return &ReSharingParameters{
 		Parameters:    params,
 		newParties:    newCtx,
 		newPartyCount: newPartyCount,
 		newThreshold:  newThreshold,
+		amOldParty:    amOldParty,
 	}
 }
 
@@ -130,21 +132,9 @@ func (rgParams *ReSharingParameters) OldAndNewPartyCount() int {
 }
 
 func (rgParams *ReSharingParameters) IsOldCommittee() bool {
-	partyID := rgParams.partyID
-	for _, Pj := range rgParams.parties.IDs() {
-		if partyID.KeyInt().Cmp(Pj.KeyInt()) == 0 {
-			return true
-		}
-	}
-	return false
+	return rgParams.amOldParty
 }
 
 func (rgParams *ReSharingParameters) IsNewCommittee() bool {
-	partyID := rgParams.partyID
-	for _, Pj := range rgParams.newParties.IDs() {
-		if partyID.KeyInt().Cmp(Pj.KeyInt()) == 0 {
-			return true
-		}
-	}
-	return false
+	return !rgParams.amOldParty
 }

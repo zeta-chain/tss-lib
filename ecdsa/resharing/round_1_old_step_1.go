@@ -21,7 +21,8 @@ import (
 // round 1 represents round 1 of the keygen part of the GG18 ECDSA TSS spec (Gennaro, Goldfeder; 2018)
 func newRound1(params *tss.ReSharingParameters, input, save *keygen.LocalPartySaveData, temp *localTempData, out chan<- tss.Message, end chan<- keygen.LocalPartySaveData) tss.Round {
 	return &round1{
-		&base{params, temp, input, save, out, end, make([]bool, len(params.OldParties().IDs())), make([]bool, len(params.NewParties().IDs())), false, 1}}
+		&base{params, temp, input, save, out, end, make([]bool, len(params.OldParties().IDs())), make([]bool, len(params.NewParties().IDs())), false, 1},
+	}
 }
 
 func (round *round1) Start() *tss.Error {
@@ -71,7 +72,7 @@ func (round *round1) Start() *tss.Error {
 
 	// 5. "broadcast" C_i to members of the NEW committee
 	r1msg := NewDGRound1Message(
-		round.NewParties().IDs().Exclude(round.PartyID()), round.PartyID(),
+		round.NewParties().IDs(), round.PartyID(),
 		round.input.ECDSAPub, vCmt.C)
 	round.temp.dgRound1Messages[i] = r1msg
 	round.out <- r1msg
