@@ -8,6 +8,7 @@ package keygen
 
 import (
 	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
@@ -162,14 +163,14 @@ func TestBadMessageCulprits(t *testing.T) {
 	assert.Equal(t, 1, len(err2.Culprits()))
 	assert.Equal(t, pIDs[1], err2.Culprits()[0])
 	assert.Equal(t,
-		"task ecdsa-keygen, party {0,P[1]}, round 1, culprits [{1,2}]: message failed ValidateBasic: Type: KGRound1Message, From: {1,2}",
+		"task ecdsa-keygen, party {0,P[1]}, round 1, culprits [{1,2}]: message failed ValidateBasic: Type: ecdsa.KGRound1Message, From: {1,2}",
 		err2.Error())
 }
 
 func TestE2EConcurrentAndSaveFixtures(t *testing.T) {
 	setUp("info")
 
-	// tss.SetCurve(elliptic.P256())
+	tss.SetCurve(elliptic.P256())
 
 	threshold := testThreshold
 	fixtures, pIDs, err := LoadKeygenTestFixtures(testParticipants)
