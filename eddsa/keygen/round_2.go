@@ -45,7 +45,7 @@ func (round *round2) Start() *tss.Error {
 	}
 
 	// 5. compute Schnorr prove
-	pii, err := zkp.NewDLogProof(round.temp.ui, round.temp.vs[0])
+	pii, err := zkp.NewDLogProof(round.curve, round.temp.ui, round.temp.vs[0])
 	if err != nil {
 		return round.WrapError(errors2.Wrapf(err, "NewDLogProof(ui, vi0)"))
 	}

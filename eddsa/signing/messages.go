@@ -14,6 +14,7 @@ import (
 	cmt "github.com/binance-chain/tss-lib/crypto/commitments"
 	"github.com/binance-chain/tss-lib/crypto/zkp"
 	"github.com/binance-chain/tss-lib/tss"
+	"github.com/decred/dcrd/dcrec/edwards/v2"
 )
 
 // These messages were generated from Protocol Buffers definitions into eddsa-signing.pb.go
@@ -88,7 +89,7 @@ func (m *SignRound2Message) UnmarshalDeCommitment() []*big.Int {
 }
 
 func (m *SignRound2Message) UnmarshalZKProof() (*zkp.DLogProof, error) {
-	point, err := crypto.NewECPointFromProtobuf(m.GetProofAlpha())
+	point, err := crypto.NewECPointFromProtobuf(edwards.Edwards(), m.GetProofAlpha())
 	if err != nil {
 		return nil, err
 	}

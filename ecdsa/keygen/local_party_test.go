@@ -8,7 +8,6 @@ package keygen
 
 import (
 	"crypto/ecdsa"
-	"crypto/elliptic"
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
@@ -18,6 +17,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	s256k1 "github.com/btcsuite/btcd/btcec"
 	"github.com/ipfs/go-log"
 	"github.com/stretchr/testify/assert"
 
@@ -169,8 +169,7 @@ func TestBadMessageCulprits(t *testing.T) {
 
 func TestE2EConcurrentAndSaveFixtures(t *testing.T) {
 	setUp("info")
-
-	tss.SetCurve(elliptic.P256())
+	curve := s256k1.S256()
 
 	threshold := testThreshold
 	fixtures, pIDs, err := LoadKeygenTestFixtures(testParticipants)
@@ -260,6 +259,7 @@ keygen:
 							Threshold: threshold,
 							ID:        P.PartyID().KeyInt(),
 							Share:     new(big.Int).SetBytes(share),
+							Curve:     curve,
 						}
 						pShares = append(pShares, shareStruct)
 					}
@@ -268,12 +268,12 @@ keygen:
 
 					// uG test: u*G[j] == V[0]
 					assert.Equal(t, uj, Pj.temp.ui)
-					uG := crypto.ScalarBaseMult(tss.EC(), uj)
+					uG := crypto.ScalarBaseMult(curve, uj)
 					assert.True(t, uG.Equals(Pj.temp.vs[0]), "ensure u*G[j] == V_0")
 
 					// xj tests: BigXj == xj*G
 					xj := Pj.data.Xi
-					gXj := crypto.ScalarBaseMult(tss.EC(), xj)
+					gXj := crypto.ScalarBaseMult(curve, xj)
 					BigXj := Pj.data.BigXj[j]
 					assert.True(t, BigXj.Equals(gXj), "ensure BigX_j == g^x_j")
 
@@ -284,7 +284,7 @@ keygen:
 						uj, err := pShares[:threshold].ReConstruct()
 						assert.NoError(t, err)
 						assert.NotEqual(t, parties[j].temp.ui, uj)
-						BigXjX, BigXjY := tss.EC().ScalarBaseMult(uj.Bytes())
+						BigXjX, BigXjY := curve.ScalarBaseMult(uj.Bytes())
 						assert.NotEqual(t, BigXjX, Pj.temp.vs[0].X())
 						assert.NotEqual(t, BigXjY, Pj.temp.vs[0].Y())
 					}
@@ -294,7 +294,7 @@ keygen:
 				// build ecdsa key pair
 				pkX, pkY := save.ECDSAPub.X(), save.ECDSAPub.Y()
 				pk := ecdsa.PublicKey{
-					Curve: tss.EC(),
+					Curve: curve,
 					X:     pkX,
 					Y:     pkY,
 				}
@@ -307,7 +307,7 @@ keygen:
 
 				// public key tests
 				assert.NotZero(t, u, "u should not be zero")
-				ourPkX, ourPkY := tss.EC().ScalarBaseMult(u.Bytes())
+				ourPkX, ourPkY := curve.ScalarBaseMult(u.Bytes())
 				assert.Equal(t, pkX, ourPkX, "pkX should match expected pk derived from u")
 				assert.Equal(t, pkY, ourPkY, "pkY should match expected pk derived from u")
 				t.Log("Public key tests done.")

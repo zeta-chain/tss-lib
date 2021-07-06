@@ -14,6 +14,8 @@ import (
 	"sync/atomic"
 	"testing"
 
+	s256k1 "github.com/btcsuite/btcd/btcec"
+
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/ipfs/go-log"
 	"github.com/stretchr/testify/assert"
@@ -38,6 +40,7 @@ func setUp(level string) {
 
 func TestE2EConcurrent(t *testing.T) {
 	setUp("info")
+	curve := s256k1.S256()
 	threshold := testThreshold
 
 	// PHASE: load keygen fixtures
@@ -104,12 +107,12 @@ signing:
 
 				// bigR is stored as bytes for the OneRoundData protobuf struct
 				bigRX, bigRY := new(big.Int).SetBytes(parties[0].temp.BigR.GetX()), new(big.Int).SetBytes(parties[0].temp.BigR.GetY())
-				bigR := crypto.NewECPointNoCurveCheck(tss.EC(), bigRX, bigRY)
+				bigR := crypto.NewECPointNoCurveCheck(curve, bigRX, bigRY)
 
 				r := parties[0].temp.rI.X()
 				fmt.Printf("sign result: R(%s, %s), r=%s\n", bigR.X().String(), bigR.Y().String(), r.String())
 
-				modN := common.ModInt(tss.EC().Params().N)
+				modN := common.ModInt(curve.Params().N)
 
 				// BEGIN check s correctness
 				sumS := big.NewInt(0)
@@ -122,7 +125,7 @@ signing:
 				// BEGIN ECDSA verify
 				pkX, pkY := keys[0].ECDSAPub.X(), keys[0].ECDSAPub.Y()
 				pk := ecdsa.PublicKey{
-					Curve: tss.EC(),
+					Curve: curve,
 					X:     pkX,
 					Y:     pkY,
 				}

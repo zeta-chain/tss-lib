@@ -7,6 +7,8 @@
 package resharing
 
 import (
+	"crypto/elliptic"
+
 	"github.com/binance-chain/tss-lib/eddsa/keygen"
 	"github.com/binance-chain/tss-lib/tss"
 )
@@ -26,6 +28,7 @@ type (
 		newOK []bool // `ok` tracks parties which have been verified by Update(); this one is for the new committee
 		started bool
 		number  int
+		curve   elliptic.Curve
 	}
 	round1 struct {
 		*base
@@ -56,6 +59,10 @@ var (
 
 func (round *base) Params() *tss.Parameters {
 	return round.ReSharingParameters.Parameters
+}
+
+func (round *base) GetCurve() elliptic.Curve {
+	return round.curve
 }
 
 func (round *base) ReSharingParams() *tss.ReSharingParameters {

@@ -30,7 +30,7 @@ func (round *round6) Start() *tss.Error {
 	Pi := round.PartyID()
 	i := Pi.Index
 
-	bigR, _ := crypto.NewECPointFromProtobuf(round.temp.BigR)
+	bigR, _ := crypto.NewECPointFromProtobuf(round.GetCurve(), round.temp.BigR)
 
 	sigmaI := round.temp.sigmaI
 	defer func() {
@@ -95,7 +95,7 @@ func (round *round6) Start() *tss.Error {
 		return round.WrapError(multiErr, culprits...)
 	}
 	{
-		ec := tss.EC()
+		ec := round.GetCurve()
 		gX, gY := ec.Params().Gx, ec.Params().Gy
 		if bigRBarJProducts.X().Cmp(gX) != 0 || bigRBarJProducts.Y().Cmp(gY) != 0 {
 			round.abortingT5 = true
@@ -115,7 +115,7 @@ func (round *round6) Start() *tss.Error {
 	// R^sigma_i proof used in type 7 aborts
 	bigSI := bigR.ScalarMult(sigmaI)
 	{
-		sigmaPf, err := zkp.NewECSigmaIProof(tss.EC(), sigmaI, bigR, bigSI)
+		sigmaPf, err := zkp.NewECSigmaIProof(round.GetCurve(), sigmaI, bigR, bigSI)
 		if err != nil {
 			return round.WrapError(err, Pi)
 		}
@@ -124,12 +124,12 @@ func (round *round6) Start() *tss.Error {
 		round.temp.r7AbortData.EcddhProofZ = sigmaPf.Z.Bytes()
 	}
 
-	h, err := crypto.ECBasePoint2(tss.EC())
+	h, err := crypto.ECBasePoint2(round.GetCurve())
 	if err != nil {
 		return round.WrapError(err, Pi)
 	}
 	TI, lI := round.temp.TI, round.temp.lI
-	stPf, err := zkp.NewSTProof(TI, bigR, h, sigmaI, lI)
+	stPf, err := zkp.NewSTProof(round.GetCurve(), TI, bigR, h, sigmaI, lI)
 	if err != nil {
 		return round.WrapError(err, Pi)
 	}

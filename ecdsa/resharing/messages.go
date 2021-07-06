@@ -16,6 +16,7 @@ import (
 	"github.com/binance-chain/tss-lib/crypto/paillier"
 	"github.com/binance-chain/tss-lib/crypto/vss"
 	"github.com/binance-chain/tss-lib/tss"
+	s256k1 "github.com/btcsuite/btcd/btcec"
 )
 
 // These messages were generated from Protocol Buffers definitions into ecdsa-resharing.pb.go
@@ -61,7 +62,7 @@ func (m *DGRound1Message) ValidateBasic() bool {
 }
 
 func (m *DGRound1Message) UnmarshalECDSAPub() (*crypto.ECPoint, error) {
-	return crypto.NewECPointFromProtobuf(m.GetEcdsaPub())
+	return crypto.NewECPointFromProtobuf(s256k1.S256(), m.GetEcdsaPub())
 }
 
 func (m *DGRound1Message) UnmarshalVCommitment() *big.Int {

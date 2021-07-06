@@ -32,7 +32,7 @@ func (round *round2) Start() *tss.Error {
 	}
 
 	// 2. compute Schnorr prove
-	pir, err := zkp.NewDLogProof(round.temp.ri, round.temp.pointRi)
+	pir, err := zkp.NewDLogProof(round.GetCurve(), round.temp.ri, round.temp.pointRi)
 	if err != nil {
 		return round.WrapError(errors2.Wrapf(err, "NewDLogProof(ri, pointRi)"))
 	}

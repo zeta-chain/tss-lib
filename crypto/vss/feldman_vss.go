@@ -11,13 +11,13 @@
 package vss
 
 import (
+	"crypto/elliptic"
 	"errors"
 	"fmt"
 	"math/big"
 
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
-	"github.com/binance-chain/tss-lib/tss"
 )
 
 type (
@@ -25,6 +25,7 @@ type (
 		Threshold int
 		ID,       // xi
 		Share *big.Int // Sigma i
+		Curve elliptic.Curve
 	}
 
 	Vs []*crypto.ECPoint // v0..vt
@@ -42,7 +43,7 @@ var (
 // Returns a new array of secret shares created by Shamir's Secret Sharing Algorithm,
 // requiring a minimum number of shares to recreate, of length shares, from the input secret
 //
-func Create(threshold int, secret *big.Int, indexes []*big.Int) (Vs, Shares, error) {
+func Create(curve elliptic.Curve,threshold int, secret *big.Int, indexes []*big.Int) (Vs, Shares, error) {
 	if secret == nil || indexes == nil {
 		return nil, nil, fmt.Errorf("vss secret or indexes == nil: %v %v", secret, indexes)
 	}
@@ -54,11 +55,11 @@ func Create(threshold int, secret *big.Int, indexes []*big.Int) (Vs, Shares, err
 		return nil, nil, ErrNumSharesBelowThreshold
 	}
 
-	poly := samplePolynomial(threshold, secret)
+	poly := samplePolynomial(curve,threshold, secret)
 	poly[0] = secret // becomes sigma*G in v
 	v := make(Vs, len(poly))
 	for i, ai := range poly {
-		v[i] = crypto.ScalarBaseMult(tss.EC(), ai)
+		v[i] = crypto.ScalarBaseMult(curve, ai)
 	}
 
 	shares := make(Shares, num)
@@ -66,8 +67,8 @@ func Create(threshold int, secret *big.Int, indexes []*big.Int) (Vs, Shares, err
 		if indexes[i].Cmp(big.NewInt(0)) == 0 {
 			return nil, nil, fmt.Errorf("party index should not be 0")
 		}
-		share := evaluatePolynomial(threshold, poly, indexes[i])
-		shares[i] = &Share{Threshold: threshold, ID: indexes[i], Share: share}
+		share := evaluatePolynomial(curve,threshold, poly, indexes[i])
+		shares[i] = &Share{Threshold: threshold, ID: indexes[i], Share: share,Curve: curve}
 	}
 	return v, shares, nil
 }
@@ -77,19 +78,19 @@ func (share *Share) Verify(threshold int, vs Vs) bool {
 		return false
 	}
 	var err error
-	modQ := common.ModInt(tss.EC().Params().N)
+	modQ := common.ModInt(share.Curve.Params().N)
 	v, t := vs[0], one // YRO : we need to have our accumulator outside of the loop
 	for j := 1; j <= threshold; j++ {
 		// t = k_i^j
 		t = modQ.Mul(t, share.ID)
 		// v = v * v_j^t
-		vjt := vs[j].SetCurve(tss.EC()).ScalarMult(t)
-		v, err = v.SetCurve(tss.EC()).Add(vjt)
+		vjt := vs[j].SetCurve(share.Curve).ScalarMult(t)
+		v, err = v.SetCurve(share.Curve).Add(vjt)
 		if err != nil {
 			return false
 		}
 	}
-	sigmaGi := crypto.ScalarBaseMult(tss.EC(), share.Share)
+	sigmaGi := crypto.ScalarBaseMult(share.Curve, share.Share)
 	return sigmaGi.Equals(v)
 }
 
@@ -97,7 +98,7 @@ func (shares Shares) ReConstruct() (secret *big.Int, err error) {
 	if shares != nil && shares[0].Threshold > len(shares) {
 		return nil, ErrNumSharesBelowThreshold
 	}
-	modN := common.ModInt(tss.EC().Params().N)
+	modN := common.ModInt(shares[0].Curve.Params().N)
 
 	// x coords
 	xs := make([]*big.Int, 0)
@@ -125,8 +126,8 @@ func (shares Shares) ReConstruct() (secret *big.Int, err error) {
 	return secret, nil
 }
 
-func samplePolynomial(threshold int, secret *big.Int) []*big.Int {
-	q := tss.EC().Params().N
+func samplePolynomial(curve elliptic.Curve,threshold int, secret *big.Int) []*big.Int {
+	q := curve.Params().N
 	v := make([]*big.Int, threshold+1)
 	v[0] = secret
 	for i := 1; i <= threshold; i++ {
@@ -140,8 +141,8 @@ func samplePolynomial(threshold int, secret *big.Int) []*big.Int {
 // evaluatePolynomial([a, b, c, d], x):
 // 		returns a + bx + cx^2 + dx^3
 //
-func evaluatePolynomial(threshold int, v []*big.Int, id *big.Int) (result *big.Int) {
-	q := tss.EC().Params().N
+func evaluatePolynomial(curve elliptic.Curve,threshold int, v []*big.Int, id *big.Int) (result *big.Int) {
+	q := curve.Params().N
 	modQ := common.ModInt(q)
 	result = new(big.Int).Set(v[0])
 	X := big.NewInt(int64(1))

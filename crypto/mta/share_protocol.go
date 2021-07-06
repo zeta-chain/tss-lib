@@ -7,20 +7,21 @@
 package mta
 
 import (
+	"crypto/elliptic"
 	"errors"
 	"math/big"
 
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
 	"github.com/binance-chain/tss-lib/crypto/paillier"
-	"github.com/binance-chain/tss-lib/tss"
 )
 
 func AliceInit(
+	curve elliptic.Curve,
 	pkA *paillier.PublicKey,
 	a, cA, rA, NTildeB, h1B, h2B *big.Int,
 ) (pf *RangeProofAlice, err error) {
-	return ProveRangeAlice(pkA, cA, NTildeB, h1B, h2B, a, rA)
+	return ProveRangeAlice(curve, pkA, cA, NTildeB, h1B, h2B, a, rA)
 }
 
 func BobMid(
@@ -32,7 +33,7 @@ func BobMid(
 		err = errors.New("RangeProofAlice.Verify() returned false")
 		return
 	}
-	q := tss.EC().Params().N
+	q := pf.Curve.Params().N
 	betaPrm = common.GetRandomPositiveInt(pkA.N)
 	cBetaPrm, cRand, err := pkA.EncryptAndReturnRandomness(betaPrm)
 	if err != nil {
@@ -45,7 +46,7 @@ func BobMid(
 		return
 	}
 	beta = common.ModInt(q).Sub(zero, betaPrm)
-	piB, err = ProveBob(pkA, NTildeA, h1A, h2A, cA, cB, b, betaPrm, cRand)
+	piB, err = ProveBob(pf.Curve, pkA, NTildeA, h1A, h2A, cA, cB, b, betaPrm, cRand)
 	return
 }
 
@@ -72,7 +73,7 @@ func BobMidWC(
 	if err != nil {
 		return
 	}
-	piB, err = ProveBobWC(pkA, NTildeA, h1A, h2A, cA, cB, b, betaPrm, cRand, B)
+	piB, err = ProveBobWC(pf.Curve, pkA, NTildeA, h1A, h2A, cA, cB, b, betaPrm, cRand, B)
 	return
 }
 
@@ -89,7 +90,7 @@ func AliceEnd(
 	if alphaIJ, err = sk.Decrypt(cB); err != nil {
 		return
 	}
-	q := tss.EC().Params().N
+	q := pf.Curve.Params().N
 	alphaIJ.Mod(alphaIJ, q)
 	return
 }
@@ -108,7 +109,7 @@ func AliceEndWC(
 	if muIJRec, muIJRand, err = sk.DecryptAndRecoverRandomness(cB); err != nil {
 		return
 	}
-	q := tss.EC().Params().N
+	q := pf.Curve.Params().N
 	muIJ = new(big.Int).Mod(muIJRec, q)
 	return
 }

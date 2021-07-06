@@ -15,6 +15,7 @@ import (
 	cmts "github.com/binance-chain/tss-lib/crypto/commitments"
 	"github.com/binance-chain/tss-lib/crypto/vss"
 	"github.com/binance-chain/tss-lib/tss"
+	"github.com/decred/dcrd/dcrec/edwards/v2"
 )
 
 var (
@@ -24,7 +25,7 @@ var (
 // round 1 represents round 1 of the keygen part of the EDDSA TSS spec
 func newRound1(params *tss.Parameters, save *LocalPartySaveData, temp *localTempData, out chan<- tss.Message, end chan<- LocalPartySaveData) tss.Round {
 	return &round1{
-		&base{params, save, temp, out, end, make([]bool, len(params.Parties().IDs())), false, 1}}
+		&base{params, save, temp, out, end, make([]bool, len(params.Parties().IDs())), false, 1, edwards.Edwards()}}
 }
 
 func (round *round1) Start() *tss.Error {
@@ -39,12 +40,12 @@ func (round *round1) Start() *tss.Error {
 	i := Pi.Index
 
 	// 1. calculate "partial" key share ui
-	ui := common.GetRandomPositiveInt(tss.EC().Params().N)
+	ui := common.GetRandomPositiveInt(round.GetCurve().Params().N)
 	round.temp.ui = ui
 
 	// 2. compute the vss shares
 	ids := round.Parties().IDs().Keys()
-	vs, shares, err := vss.Create(round.Threshold(), ui, ids)
+	vs, shares, err := vss.Create(round.GetCurve(), round.Threshold(), ui, ids)
 	if err != nil {
 		return round.WrapError(err, Pi)
 	}

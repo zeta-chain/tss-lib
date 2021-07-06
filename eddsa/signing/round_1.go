@@ -15,12 +15,13 @@ import (
 	"github.com/binance-chain/tss-lib/crypto/commitments"
 	"github.com/binance-chain/tss-lib/eddsa/keygen"
 	"github.com/binance-chain/tss-lib/tss"
+	"github.com/decred/dcrd/dcrec/edwards/v2"
 )
 
 // round 1 represents round 1 of the signing part of the EDDSA TSS spec
 func newRound1(params *tss.Parameters, key *keygen.LocalPartySaveData, data *SignatureData, temp *localTempData, out chan<- tss.Message, end chan<- *SignatureData) tss.Round {
 	return &round1{
-		&base{params, key, data, temp, out, end, make([]bool, len(params.Parties().IDs())), false, 1}}
+		&base{params, key, data, temp, out, end, make([]bool, len(params.Parties().IDs())), false, 1, edwards.Edwards()}}
 }
 
 func (round *round1) Start() *tss.Error {
@@ -35,10 +36,10 @@ func (round *round1) Start() *tss.Error {
 	i := round.PartyID().Index
 
 	// 1. select ri
-	ri := common.GetRandomPositiveInt(tss.EC().Params().N)
+	ri := common.GetRandomPositiveInt(round.GetCurve().Params().N)
 
 	// 2. make commitment
-	pointRi := crypto.ScalarBaseMult(tss.EC(), ri)
+	pointRi := crypto.ScalarBaseMult(round.GetCurve(), ri)
 	cmt := commitments.NewHashCommitment(pointRi.X(), pointRi.Y())
 
 	// 3. store r1 message pieces
@@ -91,7 +92,7 @@ func (round *round1) prepare() error {
 	if round.Threshold()+1 > len(ks) {
 		return fmt.Errorf("t+1=%d is not satisfied by the key count of %d", round.Threshold()+1, len(ks))
 	}
-	wi := PrepareForSigning(i, len(ks), xi, ks)
+	wi := PrepareForSigning(round.GetCurve(), i, len(ks), xi, ks)
 
 	round.temp.wi = wi
 	return nil

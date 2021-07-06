@@ -7,13 +7,13 @@
 package mta
 
 import (
+	"crypto/elliptic"
 	"errors"
 	"fmt"
 	"math/big"
 
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto/paillier"
-	"github.com/binance-chain/tss-lib/tss"
 )
 
 const (
@@ -27,16 +27,17 @@ var (
 type (
 	RangeProofAlice struct {
 		Z, U, W, S, S1, S2 *big.Int
+		Curve              elliptic.Curve
 	}
 )
 
 // ProveRangeAlice implements Alice's range proof used in the MtA and MtAwc protocols from GG18Spec (9) Fig. 9.
-func ProveRangeAlice(pk *paillier.PublicKey, c, NTilde, h1, h2, m, r *big.Int) (*RangeProofAlice, error) {
+func ProveRangeAlice(curve elliptic.Curve, pk *paillier.PublicKey, c, NTilde, h1, h2, m, r *big.Int) (*RangeProofAlice, error) {
 	if pk == nil || NTilde == nil || h1 == nil || h2 == nil || c == nil || m == nil || r == nil {
 		return nil, errors.New("ProveRangeAlice constructor received nil value(s)")
 	}
 
-	q := tss.EC().Params().N
+	q := curve.Params().N
 	q3 := new(big.Int).Mul(q, q)
 	q3.Mul(q3, q)
 	qNTilde := new(big.Int).Mul(q, NTilde)
@@ -86,7 +87,7 @@ func ProveRangeAlice(pk *paillier.PublicKey, c, NTilde, h1, h2, m, r *big.Int) (
 	s2 := new(big.Int).Mul(e, rho)
 	s2 = new(big.Int).Add(s2, gamma)
 
-	return &RangeProofAlice{Z: z, U: u, W: w, S: s, S1: s1, S2: s2}, nil
+	return &RangeProofAlice{Z: z, U: u, W: w, S: s, S1: s1, S2: s2, Curve: curve}, nil
 }
 
 func RangeProofAliceFromBytes(bzs [][]byte) (*RangeProofAlice, error) {
@@ -109,7 +110,7 @@ func (pf *RangeProofAlice) Verify(pk *paillier.PublicKey, NTilde, h1, h2, c *big
 	}
 
 	NSq := new(big.Int).Mul(pk.N, pk.N)
-	q := tss.EC().Params().N
+	q := pf.Curve.Params().N
 	q3 := new(big.Int).Mul(q, q)
 	q3.Mul(q3, q)
 

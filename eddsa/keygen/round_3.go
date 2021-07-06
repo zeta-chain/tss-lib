@@ -41,7 +41,7 @@ func (round *round3) Start() *tss.Error {
 		share := r2msg1.UnmarshalShare()
 		xi = new(big.Int).Add(xi, share)
 	}
-	round.save.Xi = new(big.Int).Mod(xi, tss.EC().Params().N)
+	round.save.Xi = new(big.Int).Mod(xi, round.GetCurve().Params().N)
 
 	// 2-3.
 	Vc := make(vss.Vs, round.Threshold()+1)
@@ -77,7 +77,7 @@ func (round *round3) Start() *tss.Error {
 				ch <- vssOut{errors.New("de-commitment verify failed"), nil}
 				return
 			}
-			PjVs, err := crypto.UnFlattenECPoints(tss.EC(), flatPolyGs)
+			PjVs, err := crypto.UnFlattenECPoints(round.GetCurve(), flatPolyGs)
 			for i, PjV := range PjVs {
 				PjVs[i] = PjV.EightInvEight()
 			}
@@ -100,6 +100,7 @@ func (round *round3) Start() *tss.Error {
 				Threshold: round.Threshold(),
 				ID:        round.PartyID().KeyInt(),
 				Share:     r2msg1.UnmarshalShare(),
+				Curve:     round.GetCurve(),
 			}
 			if ok = PjShare.Verify(round.Threshold(), PjVs); !ok {
 				ch <- vssOut{errors.New("vss verify failed"), nil}
@@ -159,7 +160,7 @@ func (round *round3) Start() *tss.Error {
 	// 13-17. compute Xj for each Pj
 	{
 		var err error
-		modQ := common.ModInt(tss.EC().Params().N)
+		modQ := common.ModInt(round.GetCurve().Params().N)
 		culprits := make([]*tss.PartyID, 0, len(Ps)) // who caused the error(s)
 		bigXj := round.save.BigXj
 		for j := 0; j < round.PartyCount(); j++ {
@@ -183,7 +184,7 @@ func (round *round3) Start() *tss.Error {
 	}
 
 	// 18. compute and SAVE the EDDSA public key `y`
-	eddsaPubKey, err := crypto.NewECPoint(tss.EC(), Vc[0].X(), Vc[0].Y())
+	eddsaPubKey, err := crypto.NewECPoint(round.GetCurve(), Vc[0].X(), Vc[0].Y())
 	if err != nil {
 		return round.WrapError(errors2.Wrapf(err, "public key is not on the curve"))
 	}

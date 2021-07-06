@@ -43,6 +43,7 @@ func (round *round2) Start() *tss.Error {
 				errChs <- round.WrapError(errorspkg.Wrapf(err, "MtA: UnmarshalRangeProofAlice failed"), Pj)
 				return
 			}
+			rangeProofAliceJ.Curve = round.GetCurve()
 			betaJI, c1JI, _, pi1JI, err := mta.BobMid(
 				round.key.PaillierPKs[j],
 				rangeProofAliceJ,
@@ -73,6 +74,7 @@ func (round *round2) Start() *tss.Error {
 				errChs <- round.WrapError(errorspkg.Wrapf(err, "MtA: UnmarshalRangeProofAlice failed"), Pj)
 				return
 			}
+			rangeProofAliceJ.Curve = round.GetCurve()
 			vJI, c2JI, pi2JI, err := mta.BobMidWC(
 				round.key.PaillierPKs[j],
 				rangeProofAliceJ,

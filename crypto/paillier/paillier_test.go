@@ -11,12 +11,12 @@ import (
 	"testing"
 	"time"
 
+	s256k1 "github.com/btcsuite/btcd/btcec"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
 	. "github.com/binance-chain/tss-lib/crypto/paillier"
-	"github.com/binance-chain/tss-lib/tss"
 )
 
 // Using a modulus length of 2048 is recommended in the GG18 spec
@@ -158,24 +158,26 @@ func TestHomoAdd(t *testing.T) {
 
 func TestProofVerify(t *testing.T) {
 	setUp(t)
-	ki := common.MustGetRandomInt(256)                     // index
-	ui := common.GetRandomPositiveInt(tss.EC().Params().N) // ECDSA private
-	yX, yY := tss.EC().ScalarBaseMult(ui.Bytes())          // ECDSA public
-	proof := privateKey.Proof(ki, crypto.NewECPointNoCurveCheck(tss.EC(), yX, yY))
-	res, err := proof.Verify(publicKey.N, ki, crypto.NewECPointNoCurveCheck(tss.EC(), yX, yY))
+	curve := s256k1.S256()
+	ki := common.MustGetRandomInt(256)                  // index
+	ui := common.GetRandomPositiveInt(curve.Params().N) // ECDSA private
+	yX, yY := curve.ScalarBaseMult(ui.Bytes())          // ECDSA public
+	proof := privateKey.Proof(ki, crypto.NewECPointNoCurveCheck(curve, yX, yY))
+	res, err := proof.Verify(publicKey.N, ki, crypto.NewECPointNoCurveCheck(curve, yX, yY))
 	assert.NoError(t, err)
 	assert.True(t, res, "proof verify result must be true")
 }
 
 func TestProofVerifyFail(t *testing.T) {
 	setUp(t)
-	ki := common.MustGetRandomInt(256)                     // index
-	ui := common.GetRandomPositiveInt(tss.EC().Params().N) // ECDSA private
-	yX, yY := tss.EC().ScalarBaseMult(ui.Bytes())          // ECDSA public
-	proof := privateKey.Proof(ki, crypto.NewECPointNoCurveCheck(tss.EC(), yX, yY))
+	curve := s256k1.S256()
+	ki := common.MustGetRandomInt(256)                  // index
+	ui := common.GetRandomPositiveInt(curve.Params().N) // ECDSA private
+	yX, yY := curve.ScalarBaseMult(ui.Bytes())          // ECDSA public
+	proof := privateKey.Proof(ki, crypto.NewECPointNoCurveCheck(curve, yX, yY))
 	last := proof[len(proof)-1]
 	last.Sub(last, big.NewInt(1))
-	res, err := proof.Verify(publicKey.N, ki, crypto.NewECPointNoCurveCheck(tss.EC(), yX, yY))
+	res, err := proof.Verify(publicKey.N, ki, crypto.NewECPointNoCurveCheck(curve, yX, yY))
 	assert.NoError(t, err)
 	assert.False(t, res, "proof verify result must be true")
 }
@@ -191,12 +193,13 @@ func TestComputeL(t *testing.T) {
 }
 
 func TestGenerateXs(t *testing.T) {
+	curve := s256k1.S256()
 	k := common.MustGetRandomInt(256)
 	sX := common.MustGetRandomInt(256)
 	sY := common.MustGetRandomInt(256)
 	N := common.GetRandomPrimeInt(2048)
 
-	xs := GenerateXs(13, k, N, crypto.NewECPointNoCurveCheck(tss.EC(), sX, sY))
+	xs := GenerateXs(13, k, N, crypto.NewECPointNoCurveCheck(curve, sX, sY))
 	assert.Equal(t, 13, len(xs))
 	for _, xi := range xs {
 		assert.True(t, common.IsNumberInMultiplicativeGroup(N, xi))

@@ -7,17 +7,17 @@
 package signing
 
 import (
+	"crypto/elliptic"
 	"fmt"
 	"math/big"
 
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
-	"github.com/binance-chain/tss-lib/tss"
 )
 
 // PrepareForSigning(), GG18Spec (11) Fig. 14
-func PrepareForSigning(i, pax int, xi *big.Int, ks []*big.Int, bigXs []*crypto.ECPoint) (wi *big.Int, bigWs []*crypto.ECPoint, err error) {
-	modQ := common.ModInt(tss.EC().Params().N)
+func PrepareForSigning(curve elliptic.Curve, i, pax int, xi *big.Int, ks []*big.Int, bigXs []*crypto.ECPoint) (wi *big.Int, bigWs []*crypto.ECPoint, err error) {
+	modQ := common.ModInt(curve.Params().N)
 	if len(ks) != len(bigXs) {
 		panic(fmt.Errorf("PrepareForSigning: len(ks) != len(bigXs) (%d != %d)", len(ks), len(bigXs)))
 	}
@@ -54,13 +54,14 @@ func PrepareForSigning(i, pax int, xi *big.Int, ks []*big.Int, bigXs []*crypto.E
 			}
 			// big.Int Div is calculated as: a/b = a * modInv(b,q)
 			iota := modQ.Mul(ksc, modQ.Inverse(new(big.Int).Sub(ksc, ksj)))
+			bigWj.SetCurve(curve)
 			bigWj = bigWj.ScalarMult(iota)
 		}
 		bigWs[j] = bigWj
 	}
 
 	// assertion: g^w_i == W_i
-	if !crypto.ScalarBaseMult(tss.EC(), wi).Equals(bigWs[i]) {
+	if !crypto.ScalarBaseMult(curve, wi).Equals(bigWs[i]) {
 		err = fmt.Errorf("assertion failed: g^w_i == W_i")
 		return
 	}

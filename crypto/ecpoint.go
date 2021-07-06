@@ -18,10 +18,10 @@ import (
 	"sync/atomic"
 
 	"github.com/btcsuite/btcd/btcec"
+	s256k1 "github.com/btcsuite/btcd/btcec"
 	"github.com/decred/dcrd/dcrec/edwards/v2"
 
 	"github.com/binance-chain/tss-lib/common"
-	"github.com/binance-chain/tss-lib/tss"
 )
 
 // ECPoint represents a point on an elliptic curve in affine form. It is designed to be immutable
@@ -51,11 +51,11 @@ func NewECPointNoCurveCheck(curve elliptic.Curve, X, Y *big.Int) *ECPoint {
 	return &ECPoint{curve, [2]*big.Int{X, Y}, 0}
 }
 
-func NewECPointFromProtobuf(p *common.ECPoint) (*ECPoint, error) {
+func NewECPointFromProtobuf(curve elliptic.Curve, p *common.ECPoint) (*ECPoint, error) {
 	if p == nil || p.GetX() == nil || p.GetY() == nil {
 		return nil, errors.New("nil protobuf point provided")
 	}
-	return NewECPoint(tss.EC(), new(big.Int).SetBytes(p.GetX()), new(big.Int).SetBytes(p.GetY()))
+	return NewECPoint(curve, new(big.Int).SetBytes(p.GetX()), new(big.Int).SetBytes(p.GetY()))
 }
 
 func (p *ECPoint) X() *big.Int {
@@ -304,7 +304,7 @@ func (p *ECPoint) GobEncode() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (p *ECPoint) GobDecode(buf []byte) error {
+func (p *ECPoint) GobDecode(curve elliptic.Curve, buf []byte) error {
 	reader := bytes.NewReader(buf)
 	var length uint32
 	if err := binary.Read(reader, binary.LittleEndian, &length); err != nil {
@@ -332,7 +332,7 @@ func (p *ECPoint) GobDecode(buf []byte) error {
 	if err := Y.GobDecode(y); err != nil {
 		return err
 	}
-	p.curve = tss.EC()
+	p.curve = curve
 	p.coords = [2]*big.Int{X, Y}
 	if !p.IsOnCurve() {
 		return errors.New("ECPoint.UnmarshalJSON: the point is not on the elliptic curve")
@@ -344,22 +344,43 @@ func (p *ECPoint) GobDecode(buf []byte) error {
 
 // crypto.ECPoint is not inherently json marshal-able
 func (p *ECPoint) MarshalJSON() ([]byte, error) {
+	var curveType string
+	switch p.curve.(type) {
+	case *s256k1.KoblitzCurve:
+		curveType = "ecdsa"
+	case *edwards.TwistedEdwardsCurve:
+		curveType = "eddsa"
+	default:
+		return nil, errors.New("unsupported curve")
+	}
 	return json.Marshal(&struct {
-		Coords [2]*big.Int
+		Coords    [2]*big.Int
+		CurveType string
 	}{
-		Coords: p.coords,
+		Coords:    p.coords,
+		CurveType: curveType,
 	})
+
 }
 
 func (p *ECPoint) UnmarshalJSON(payload []byte) error {
 	aux := &struct {
-		Coords [2]*big.Int
+		Coords    [2]*big.Int
+		CurveType string
 	}{}
 	if err := json.Unmarshal(payload, &aux); err != nil {
 		return err
 	}
-	p.curve = tss.EC()
 	p.coords = [2]*big.Int{aux.Coords[0], aux.Coords[1]}
+	switch aux.CurveType {
+	case "ecdsa":
+		p.curve = s256k1.S256()
+	case "eddsa":
+		p.curve = edwards.Edwards()
+	default:
+		return errors.New("unsupported curve")
+
+	}
 	if !p.IsOnCurve() {
 		return errors.New("ECPoint.UnmarshalJSON: the point is not on the elliptic curve")
 	}

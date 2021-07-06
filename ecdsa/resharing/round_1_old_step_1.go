@@ -16,12 +16,13 @@ import (
 	"github.com/binance-chain/tss-lib/ecdsa/keygen"
 	"github.com/binance-chain/tss-lib/ecdsa/signing"
 	"github.com/binance-chain/tss-lib/tss"
+	s256k1 "github.com/btcsuite/btcd/btcec"
 )
 
 // round 1 represents round 1 of the keygen part of the GG18 ECDSA TSS spec (Gennaro, Goldfeder; 2018)
 func newRound1(params *tss.ReSharingParameters, input, save *keygen.LocalPartySaveData, temp *localTempData, out chan<- tss.Message, end chan<- keygen.LocalPartySaveData) tss.Round {
 	return &round1{
-		&base{params, temp, input, save, out, end, make([]bool, len(params.OldParties().IDs())), make([]bool, len(params.NewParties().IDs())), false, 1}}
+		&base{params, temp, input, save, out, end, make([]bool, len(params.OldParties().IDs())), make([]bool, len(params.NewParties().IDs())), false, 1, s256k1.S256()}}
 }
 
 func (round *round1) Start() *tss.Error {
@@ -47,13 +48,13 @@ func (round *round1) Start() *tss.Error {
 		return round.WrapError(fmt.Errorf("t+1=%d is not satisfied by the key count of %d", round.Threshold()+1, len(ks)), round.PartyID())
 	}
 	newKs := round.NewParties().IDs().Keys()
-	wi, _, err := signing.PrepareForSigning(i, len(round.OldParties().IDs()), xi, ks, bigXj)
+	wi, _, err := signing.PrepareForSigning(round.GetCurve(), i, len(round.OldParties().IDs()), xi, ks, bigXj)
 	if err != nil {
 		return round.WrapError(err, round.PartyID())
 	}
 
 	// 2.
-	vi, shares, err := vss.Create(round.NewThreshold(), wi, newKs)
+	vi, shares, err := vss.Create(round.GetCurve(), round.NewThreshold(), wi, newKs)
 	if err != nil {
 		return round.WrapError(err, round.PartyID())
 	}

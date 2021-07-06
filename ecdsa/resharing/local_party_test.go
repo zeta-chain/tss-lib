@@ -14,6 +14,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	s256k1 "github.com/btcsuite/btcd/btcec"
 	"github.com/ipfs/go-log"
 	"github.com/stretchr/testify/assert"
 
@@ -39,6 +40,7 @@ func setUp(level string) {
 
 func TestE2EConcurrent(t *testing.T) {
 	setUp("info")
+	curve := s256k1.S256()
 
 	// tss.SetCurve(elliptic.P256())
 
@@ -149,7 +151,7 @@ func TestE2EConcurrent(t *testing.T) {
 				for j, key := range newKeys {
 					// xj test: BigXj == xj*G
 					xj := key.Xi
-					gXj := crypto.ScalarBaseMult(tss.EC(), xj)
+					gXj := crypto.ScalarBaseMult(curve, xj)
 					BigXj := key.BigXj[j]
 					assert.True(t, BigXj.Equals(gXj), "ensure BigX_j == g^x_j")
 				}
@@ -214,7 +216,7 @@ signing:
 				// BEGIN ECDSA verify
 				pkX, pkY := signKeys[0].ECDSAPub.X(), signKeys[0].ECDSAPub.Y()
 				pk := ecdsa.PublicKey{
-					Curve: tss.EC(),
+					Curve: curve,
 					X:     pkX,
 					Y:     pkY,
 				}

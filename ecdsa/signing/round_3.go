@@ -52,6 +52,7 @@ func (round *round3) Start() *tss.Error {
 				errChs <- round.WrapError(errorspkg.Wrapf(err, "MtA: UnmarshalProofBob failed"), Pj)
 				return
 			}
+			proofBob.Curve = round.GetCurve()
 			alphaIJ, err := mta.AliceEnd(
 				round.key.PaillierPKs[i],
 				proofBob,
@@ -77,6 +78,7 @@ func (round *round3) Start() *tss.Error {
 				errChs <- round.WrapError(errorspkg.Wrapf(err, "MtA: UnmarshalProofBobWC failed"), Pj)
 				return
 			}
+			proofBobWC.Curve = round.GetCurve()
 			muIJ, muIJRec, muIJRand, err := mta.AliceEndWC(
 				round.key.PaillierPKs[i],
 				proofBobWC,
@@ -111,7 +113,7 @@ func (round *round3) Start() *tss.Error {
 	round.temp.r7AbortData.MuIJ = common.BigIntsToBytes(muIJRecs)
 	round.temp.r7AbortData.MuRandIJ = common.BigIntsToBytes(muRandIJ)
 
-	q := tss.EC().Params().N
+	q := round.GetCurve().Params().N
 	modN := common.ModInt(q)
 
 	kI := new(big.Int).SetBytes(round.temp.KI)
@@ -137,18 +139,18 @@ func (round *round3) Start() *tss.Error {
 
 	// gg20: calculate T_i = g^sigma_i h^l_i
 	lI := common.GetRandomPositiveInt(q)
-	h, err := crypto.ECBasePoint2(tss.EC())
+	h, err := crypto.ECBasePoint2(round.GetCurve())
 	if err != nil {
 		return round.WrapError(err, Pi)
 	}
 	hLI := h.ScalarMult(lI)
-	gSigmaI := crypto.ScalarBaseMult(tss.EC(), sigmaI)
+	gSigmaI := crypto.ScalarBaseMult(round.GetCurve(), sigmaI)
 	TI, err := gSigmaI.Add(hLI)
 	if err != nil {
 		return round.WrapError(err, Pi)
 	}
 	// gg20: generate the ZK proof of T_i, verified in ValidateBasic for the round 3 message
-	tProof, err := zkp.NewTProof(TI, h, sigmaI, lI)
+	tProof, err := zkp.NewTProof(round.GetCurve(), TI, h, sigmaI, lI)
 	if err != nil {
 		return round.WrapError(err, Pi)
 	}

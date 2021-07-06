@@ -29,7 +29,7 @@ func (round *round7) Start() *tss.Error {
 	Pi := round.PartyID()
 	i := Pi.Index
 
-	N := tss.EC().Params().N
+	N := round.GetCurve().Params().N
 	modN := common.ModInt(N)
 
 	culprits := make([]*tss.PartyID, 0, len(round.temp.signRound6Messages))
@@ -54,7 +54,7 @@ func (round *round7) Start() *tss.Error {
 
 			// Check that value gamma_j (in MtA) is consistent with bigGamma_j that is de-committed in Phase 4
 			gammaJ := new(big.Int).SetBytes(r6msg.GetGammaI())
-			gammaJG := crypto.ScalarBaseMult(tss.EC(), gammaJ)
+			gammaJG := crypto.ScalarBaseMult(round.GetCurve(), gammaJ)
 			if !gammaJG.Equals(round.temp.bigGammaJs[j]) {
 				culprits = append(culprits, Pj)
 				continue
@@ -92,9 +92,9 @@ func (round *round7) Start() *tss.Error {
 
 	// bigR is stored as bytes for the OneRoundData protobuf struct
 	bigRX, bigRY := new(big.Int).SetBytes(round.temp.BigR.GetX()), new(big.Int).SetBytes(round.temp.BigR.GetY())
-	bigR := crypto.NewECPointNoCurveCheck(tss.EC(), bigRX, bigRY)
+	bigR := crypto.NewECPointNoCurveCheck(round.GetCurve(), bigRX, bigRY)
 
-	h, err := crypto.ECBasePoint2(tss.EC())
+	h, err := crypto.ECBasePoint2(round.GetCurve())
 	if err != nil {
 		return round.WrapError(err, Pi)
 	}
@@ -130,6 +130,7 @@ func (round *round7) Start() *tss.Error {
 		// ZK STProof check
 		if j != i {
 			stProof, err := r6msg.UnmarshalSTProof()
+			stProof.Curve = round.GetCurve()
 			if err != nil {
 				culprits = append(culprits, Pj)
 				multiErr = multierror.Append(multiErr, err)
@@ -185,7 +186,7 @@ func (round *round7) Start() *tss.Error {
 	}
 
 	// Continuing the full online protocol.
-	sI := FinalizeGetOurSigShare(round.data, round.temp.m)
+	sI := FinalizeGetOurSigShare(round.GetCurve(), round.data, round.temp.m)
 	round.temp.sI = sI
 
 	r7msg := NewSignRound7MessageSuccess(round.PartyID(), sI)

@@ -11,12 +11,12 @@ import (
 	"testing"
 	"time"
 
+	s256k1 "github.com/btcsuite/btcd/btcec"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
 	"github.com/binance-chain/tss-lib/crypto/paillier"
-	"github.com/binance-chain/tss-lib/tss"
 )
 
 // Using a modulus length of 2048 is recommended in the GG18 spec
@@ -25,7 +25,8 @@ const (
 )
 
 func TestProveRangeAlice(t *testing.T) {
-	q := tss.EC().Params().N
+	curve := s256k1.S256()
+	q := curve.Params().N
 
 	sk, pk, err := paillier.GenerateKeyPair(testPaillierKeyLength, 10*time.Minute)
 	assert.NoError(t, err)
@@ -37,7 +38,7 @@ func TestProveRangeAlice(t *testing.T) {
 	primes := [2]*big.Int{common.GetRandomPrimeInt(testSafePrimeBits), common.GetRandomPrimeInt(testSafePrimeBits)}
 	NTildei, h1i, h2i, err := crypto.GenerateNTildei(primes)
 	assert.NoError(t, err)
-	proof, err := ProveRangeAlice(pk, c, NTildei, h1i, h2i, m, r)
+	proof, err := ProveRangeAlice(curve, pk, c, NTildei, h1i, h2i, m, r)
 	assert.NoError(t, err)
 
 	ok := proof.Verify(pk, NTildei, h1i, h2i, c)

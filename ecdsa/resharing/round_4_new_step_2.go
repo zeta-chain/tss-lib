@@ -107,7 +107,7 @@ func (round *round4) Start() *tss.Error {
 	newXi := big.NewInt(0)
 
 	// 5-9.
-	modQ := common.ModInt(tss.EC().Params().N)
+	modQ := common.ModInt(round.GetCurve().Params().N)
 	vjc := make([][]*crypto.ECPoint, len(round.OldParties().IDs()))
 	for j := 0; j <= len(vjc)-1; j++ { // P1..P_t+1. Ps are indexed from 0 here
 		// 6-7.
@@ -123,7 +123,7 @@ func (round *round4) Start() *tss.Error {
 			// TODO collect culprits and return a list of them as per convention
 			return round.WrapError(errors.New("de-commitment of v_j0..v_jt failed"), round.Parties().IDs()[j])
 		}
-		vj, err := crypto.UnFlattenECPoints(tss.EC(), flatVs)
+		vj, err := crypto.UnFlattenECPoints(round.GetCurve(), flatVs)
 		if err != nil {
 			return round.WrapError(err, round.Parties().IDs()[j])
 		}
@@ -135,6 +135,7 @@ func (round *round4) Start() *tss.Error {
 			Threshold: round.NewThreshold(),
 			ID:        round.PartyID().KeyInt(),
 			Share:     new(big.Int).SetBytes(r3msg1.Share),
+			Curve:     round.GetCurve(),
 		}
 		if ok := sharej.Verify(round.NewThreshold(), vj); !ok {
 			// TODO collect culprits and return a list of them as per convention

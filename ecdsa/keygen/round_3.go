@@ -65,7 +65,7 @@ func (round *round3) Start() *tss.Error {
 				ch <- vssOut{errors.New("de-commitment verify failed"), nil}
 				return
 			}
-			PjVs, err := crypto.UnFlattenECPoints(tss.EC(), flatPolyGs)
+			PjVs, err := crypto.UnFlattenECPoints(round.curve, flatPolyGs)
 			if err != nil {
 				ch <- vssOut{err, nil}
 				return
@@ -75,6 +75,7 @@ func (round *round3) Start() *tss.Error {
 				Threshold: round.Threshold(),
 				ID:        round.PartyID().KeyInt(),
 				Share:     r2msg1.UnmarshalShare(),
+				Curve:     round.curve,
 			}
 			if ok = PjShare.Verify(round.Threshold(), PjVs); !ok {
 				ch <- vssOut{errors.New("vss verify failed"), nil}
@@ -86,7 +87,7 @@ func (round *round3) Start() *tss.Error {
 	}
 
 	// 1,9. calculate xi (deferred for performance)
-	modQ := common.ModInt(tss.EC().Params().N)
+	modQ := common.ModInt(round.curve.Params().N)
 	xi := new(big.Int).Set(round.temp.shares[PIdx].Share)
 	for j := range Ps {
 		if j == PIdx {
@@ -161,6 +162,7 @@ func (round *round3) Start() *tss.Error {
 					culprits = append(culprits, Pj)
 				}
 			}
+			BigXj.SetCurve(round.GetCurve())
 			bigXj[j] = BigXj
 		}
 		if len(culprits) > 0 {
@@ -170,7 +172,7 @@ func (round *round3) Start() *tss.Error {
 	}
 
 	// 17. compute and SAVE the ECDSA public key `y`
-	ecdsaPubKey, err := crypto.NewECPoint(tss.EC(), Vc[0].X(), Vc[0].Y())
+	ecdsaPubKey, err := crypto.NewECPoint(round.curve, Vc[0].X(), Vc[0].Y())
 	if err != nil {
 		return round.WrapError(errors2.Wrapf(err, "public key is not on the curve"))
 	}

@@ -9,6 +9,7 @@
 package zkp
 
 import (
+	"crypto/elliptic"
 	"fmt"
 	"math/big"
 
@@ -16,7 +17,6 @@ import (
 	"github.com/binance-chain/tss-lib/crypto"
 	cmts "github.com/binance-chain/tss-lib/crypto/commitments"
 	"github.com/binance-chain/tss-lib/crypto/paillier"
-	"github.com/binance-chain/tss-lib/tss"
 )
 
 type (
@@ -37,6 +37,7 @@ type (
 		U1 *crypto.ECPoint
 		U2, U3,
 		S1, S2, S3 *big.Int
+		Curve elliptic.Curve
 	}
 )
 
@@ -48,8 +49,8 @@ var (
 	one = big.NewInt(1)
 )
 
-func NewPDLwSlackProof(wit PDLwSlackWitness, st PDLwSlackStatement) PDLwSlackProof {
-	q := tss.EC().Params().N
+func NewPDLwSlackProof(curve elliptic.Curve, wit PDLwSlackWitness, st PDLwSlackStatement) PDLwSlackProof {
+	q := curve.Params().N
 	q3 := new(big.Int).Mul(q, q)
 	q3.Mul(q3, q)
 	qNTilde := new(big.Int).Mul(q, st.NTilde)
@@ -74,11 +75,11 @@ func NewPDLwSlackProof(wit PDLwSlackWitness, st PDLwSlackStatement) PDLwSlackPro
 	s2 := commitmentUnknownOrder(wit.R, beta, st.PK.N, e, one)
 	s3.Add(s3, gamma)
 
-	return PDLwSlackProof{z, u1, u2, u3, s1, s2, s3}
+	return PDLwSlackProof{z, u1, u2, u3, s1, s2, s3, curve}
 }
 
 func (pf PDLwSlackProof) Verify(st PDLwSlackStatement) bool {
-	q := tss.EC().Params().N
+	q := pf.Curve.Params().N
 
 	e := common.SHA512_256i(st.G.X(), st.G.Y(), st.Q.X(), st.Q.Y(), st.CipherText, pf.Z, pf.U1.X(), pf.U1.Y(), pf.U2, pf.U3)
 	gS1 := st.G.ScalarMult(pf.S1)
@@ -120,7 +121,7 @@ func (pf PDLwSlackProof) Marshal() ([][]byte, error) {
 	return bzs, nil
 }
 
-func UnmarshalPDLwSlackProof(bzs [][]byte) (*PDLwSlackProof, error) {
+func UnmarshalPDLwSlackProof(curve elliptic.Curve, bzs [][]byte) (*PDLwSlackProof, error) {
 	bis := make([]*big.Int, len(bzs))
 	for i := range bis {
 		bis[i] = new(big.Int).SetBytes(bzs[i])
@@ -143,8 +144,9 @@ func UnmarshalPDLwSlackProof(bzs [][]byte) (*PDLwSlackProof, error) {
 		return nil, fmt.Errorf("UnmarshalPDLwSlackProof, part 3, expected len %d but copied %d", 3, len3)
 	}
 	p := new(PDLwSlackProof)
+	p.Curve = curve
 	p.Z = parsed[0][0]
-	U1, err := crypto.NewECPoint(tss.EC(), parsed[1][0], parsed[1][1])
+	U1, err := crypto.NewECPoint(curve, parsed[1][0], parsed[1][1])
 	if err != nil {
 		return nil, err
 	}

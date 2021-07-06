@@ -17,6 +17,7 @@ import (
 	"github.com/binance-chain/tss-lib/crypto/mta"
 	"github.com/binance-chain/tss-lib/ecdsa/keygen"
 	"github.com/binance-chain/tss-lib/tss"
+	s256k1 "github.com/btcsuite/btcd/btcec"
 )
 
 var (
@@ -26,7 +27,7 @@ var (
 // round 1 represents round 1 of the signing part of the GG18 ECDSA TSS spec (Gennaro, Goldfeder; 2018)
 func newRound1(params *tss.Parameters, key *keygen.LocalPartySaveData, data *SignatureData, temp *localTempData, out chan<- tss.Message, end chan<- *SignatureData) tss.Round {
 	return &round1{
-		&base{params, key, data, temp, out, end, make([]bool, len(params.Parties().IDs())), false, 1}}
+		&base{params, key, data, temp, out, end, make([]bool, len(params.Parties().IDs())), false, 1, s256k1.S256()}}
 }
 
 func (round *round1) Start() *tss.Error {
@@ -39,7 +40,7 @@ func (round *round1) Start() *tss.Error {
 	// if this big.Int is not belongs to Zq, the client might not comply with common rule (for ECDSA):
 	// https://github.com/btcsuite/btcd/blob/c26ffa870fd817666a857af1bf6498fabba1ffe3/btcec/signature.go#L263
 	if round.temp.m != nil &&
-		round.temp.m.Cmp(tss.EC().Params().N) >= 0 {
+		round.temp.m.Cmp(round.GetCurve().Params().N) >= 0 {
 		return round.WrapError(errors.New("hashed message is not valid"))
 	}
 
@@ -51,12 +52,12 @@ func (round *round1) Start() *tss.Error {
 	i := Pi.Index
 	round.ok[i] = true
 
-	gammaI := common.GetRandomPositiveInt(tss.EC().Params().N)
-	kI := common.GetRandomPositiveInt(tss.EC().Params().N)
+	gammaI := common.GetRandomPositiveInt(round.GetCurve().Params().N)
+	kI := common.GetRandomPositiveInt(round.GetCurve().Params().N)
 	round.temp.gammaI = gammaI
 	round.temp.r5AbortData.GammaI = gammaI.Bytes()
 
-	gammaIG := crypto.ScalarBaseMult(tss.EC(), gammaI)
+	gammaIG := crypto.ScalarBaseMult(round.GetCurve(), gammaI)
 	round.temp.gammaIG = gammaIG
 
 	cmt := commitments.NewHashCommitment(gammaIG.X(), gammaIG.Y())
@@ -84,7 +85,7 @@ func (round *round1) Start() *tss.Error {
 		if j == i {
 			continue
 		}
-		pi, err := mta.AliceInit(paiPK, kI, cA, rA, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j])
+		pi, err := mta.AliceInit(round.GetCurve(), paiPK, kI, cA, rA, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j])
 		if err != nil {
 			return round.WrapError(fmt.Errorf("failed to init mta: %v", err))
 		}
@@ -141,7 +142,7 @@ func (round *round1) prepare() error {
 	if round.Threshold()+1 > len(ks) {
 		return fmt.Errorf("t+1=%d is not satisfied by the key count of %d", round.Threshold()+1, len(ks))
 	}
-	if wI, bigWs, err := PrepareForSigning(i, len(ks), xi, ks, bigXs); err != nil {
+	if wI, bigWs, err := PrepareForSigning(round.GetCurve(), i, len(ks), xi, ks, bigXs); err != nil {
 		return err
 	} else {
 		round.temp.wI = wI

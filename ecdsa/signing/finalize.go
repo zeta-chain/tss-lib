@@ -9,6 +9,7 @@ package signing
 import (
 	"bytes"
 	"crypto/ecdsa"
+	"crypto/elliptic"
 	"errors"
 	"fmt"
 	"math/big"
@@ -32,10 +33,10 @@ const (
 // -----
 
 // FinalizeGetOurSigShare is called in one-round signing mode after the online rounds have finished to compute s_i.
-func FinalizeGetOurSigShare(state *SignatureData, msg *big.Int) (sI *big.Int) {
+func FinalizeGetOurSigShare(curve elliptic.Curve, state *SignatureData, msg *big.Int) (sI *big.Int) {
 	data := state.GetOneRoundData()
 
-	N := tss.EC().Params().N
+	N := curve.Params().N
 	modN := common.ModInt(N)
 
 	kI, rSigmaI := new(big.Int).SetBytes(data.GetKI()), new(big.Int).SetBytes(data.GetRSigmaI())
@@ -46,6 +47,7 @@ func FinalizeGetOurSigShare(state *SignatureData, msg *big.Int) (sI *big.Int) {
 // FinalizeGetOurSigShare is called in one-round signing mode to build a final signature given others' s_i shares and a msg.
 // Note: each P in otherPs should correspond with that P's s_i at the same index in otherSIs.
 func FinalizeGetAndVerifyFinalSig(
+	curve elliptic.Curve,
 	state *SignatureData,
 	pk *ecdsa.PublicKey,
 	msg *big.Int,
@@ -61,10 +63,10 @@ func FinalizeGetAndVerifyFinalSig(
 		return nil, nil, FinalizeWrapError(errors.New("len(otherSIs) != T"), ourP)
 	}
 
-	N := tss.EC().Params().N
+	N := curve.Params().N
 	modN := common.ModInt(N)
 
-	bigR, err := crypto.NewECPoint(tss.EC(),
+	bigR, err := crypto.NewECPoint(curve,
 		new(big.Int).SetBytes(data.GetBigR().GetX()),
 		new(big.Int).SetBytes(data.GetBigR().GetY()))
 	if err != nil {
@@ -81,14 +83,14 @@ func FinalizeGetAndVerifyFinalSig(
 		}
 
 		// prep for identify aborts in phase 7
-		bigRBarJ, err := crypto.NewECPoint(tss.EC(),
+		bigRBarJ, err := crypto.NewECPoint(curve,
 			new(big.Int).SetBytes(bigRBarJBz.GetX()),
 			new(big.Int).SetBytes(bigRBarJBz.GetY()))
 		if err != nil {
 			culprits = append(culprits, Pj)
 			continue
 		}
-		bigSI, err := crypto.NewECPoint(tss.EC(),
+		bigSI, err := crypto.NewECPoint(curve,
 			new(big.Int).SetBytes(bigSJBz.GetX()),
 			new(big.Int).SetBytes(bigSJBz.GetY()))
 		if err != nil {
@@ -182,7 +184,7 @@ func (round *finalization) Start() *tss.Error {
 	// Identifiable Abort Type 7 triggered during Phase 6 (GG20)
 	if round.abortingT7 {
 		common.Logger.Infof("round 8: Abort Type 7 code path triggered")
-		q := tss.EC().Params().N
+		q := round.GetCurve().Params().N
 		kIs := make([][]byte, len(Ps))
 		gMus := make([][]*crypto.ECPoint, len(Ps))
 		gNus := make([][]*crypto.ECPoint, len(Ps))
@@ -252,7 +254,7 @@ func (round *finalization) Start() *tss.Error {
 				if k == j {
 					continue
 				}
-				gMus[j][k] = crypto.ScalarBaseMult(tss.EC(), mu.Mod(mu, q))
+				gMus[j][k] = crypto.ScalarBaseMult(round.GetCurve(), mu.Mod(mu, q))
 			}
 		}
 		bigR := round.temp.rI
@@ -282,8 +284,8 @@ func (round *finalization) Start() *tss.Error {
 				gSigmaI, _ = gSigmaI.Add(gMuIJ)
 				gSigmaI, _ = gSigmaI.Add(gNuJI)
 			}
-			bigSI, _ := crypto.NewECPointFromProtobuf(round.temp.BigSJ[P.Id])
-			if !gSigmaIPfs[i].VerifySigmaI(tss.EC(), gSigmaI, bigR, bigSI) {
+			bigSI, _ := crypto.NewECPointFromProtobuf(round.GetCurve(), round.temp.BigSJ[P.Id])
+			if !gSigmaIPfs[i].VerifySigmaI(round.GetCurve(), gSigmaI, bigR, bigSI) {
 				culprits = append(culprits, P)
 				continue
 			}
@@ -314,11 +316,11 @@ func (round *finalization) Start() *tss.Error {
 	}
 
 	pk := &ecdsa.PublicKey{
-		Curve: tss.EC(),
+		Curve: round.GetCurve(),
 		X:     round.key.ECDSAPub.X(),
 		Y:     round.key.ECDSAPub.Y(),
 	}
-	data, _, err := FinalizeGetAndVerifyFinalSig(round.data, pk, round.temp.m, round.PartyID(), ourSI, otherSIs)
+	data, _, err := FinalizeGetAndVerifyFinalSig(round.GetCurve(), round.data, pk, round.temp.m, round.PartyID(), ourSI, otherSIs)
 	if err != nil {
 		return err
 	}

@@ -9,19 +9,20 @@ package zkp_test
 import (
 	"testing"
 
+	s256k1 "github.com/btcsuite/btcd/btcec"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
 	. "github.com/binance-chain/tss-lib/crypto/zkp"
-	"github.com/binance-chain/tss-lib/tss"
 )
 
 func TestSchnorrProof(t *testing.T) {
-	q := tss.EC().Params().N
+	curve := s256k1.S256()
+	q := curve.Params().N
 	u := common.GetRandomPositiveInt(q)
-	uG := crypto.ScalarBaseMult(tss.EC(), u)
-	proof, _ := NewDLogProof(u, uG)
+	uG := crypto.ScalarBaseMult(curve, u)
+	proof, _ := NewDLogProof(curve, u, uG)
 
 	assert.True(t, proof.Alpha.IsOnCurve())
 	assert.NotZero(t, proof.Alpha.X())
@@ -30,24 +31,26 @@ func TestSchnorrProof(t *testing.T) {
 }
 
 func TestSchnorrProofVerify(t *testing.T) {
-	q := tss.EC().Params().N
+	curve := s256k1.S256()
+	q := curve.Params().N
 	u := common.GetRandomPositiveInt(q)
-	X := crypto.ScalarBaseMult(tss.EC(), u)
+	X := crypto.ScalarBaseMult(curve, u)
 
-	proof, _ := NewDLogProof(u, X)
+	proof, _ := NewDLogProof(curve, u, X)
 	res := proof.Verify(X)
 
 	assert.True(t, res, "verify result must be true")
 }
 
 func TestSchnorrProofVerifyBadX(t *testing.T) {
-	q := tss.EC().Params().N
+	curve := s256k1.S256()
+	q := curve.Params().N
 	u := common.GetRandomPositiveInt(q)
 	u2 := common.GetRandomPositiveInt(q)
-	X := crypto.ScalarBaseMult(tss.EC(), u)
-	X2 := crypto.ScalarBaseMult(tss.EC(), u2)
+	X := crypto.ScalarBaseMult(curve, u)
+	X2 := crypto.ScalarBaseMult(curve, u2)
 
-	proof, _ := NewDLogProof(u2, X2)
+	proof, _ := NewDLogProof(curve, u2, X2)
 	res := proof.Verify(X)
 
 	assert.False(t, res, "verify result must be false")

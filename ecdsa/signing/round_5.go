@@ -30,7 +30,7 @@ func (round *round5) Start() *tss.Error {
 	Pi := round.PartyID()
 	i := Pi.Index
 
-	modN := common.ModInt(tss.EC().Params().N)
+	modN := common.ModInt(round.GetCurve().Params().N)
 
 	bigR := round.temp.gammaIG
 	deltaI := *round.temp.deltaI
@@ -51,7 +51,7 @@ func (round *round5) Start() *tss.Error {
 		if !ok || len(bigGammaJ) != 2 {
 			return round.WrapError(errors.New("commitment verify failed"), Pj)
 		}
-		bigGammaJPoint, err := crypto.NewECPoint(tss.EC(), bigGammaJ[0], bigGammaJ[1])
+		bigGammaJPoint, err := crypto.NewECPoint(round.GetCurve(), bigGammaJ[0], bigGammaJ[1])
 		if err != nil {
 			return round.WrapError(errors2.Wrapf(err, "NewECPoint(bigGammaJ)"), Pj)
 		}
@@ -97,7 +97,7 @@ func (round *round5) Start() *tss.Error {
 		X:  kI,
 		R:  round.temp.rAKI,
 	}
-	pdlWSlackPf := zkp.NewPDLwSlackProof(pdlWSlackWitness, pdlWSlackStatement)
+	pdlWSlackPf := zkp.NewPDLwSlackProof(round.GetCurve(), pdlWSlackWitness, pdlWSlackStatement)
 
 	r5msg := NewSignRound5Message(Pi, bigRBarI, &pdlWSlackPf)
 	round.temp.signRound5Messages[i] = r5msg

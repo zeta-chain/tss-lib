@@ -7,6 +7,8 @@
 package signing
 
 import (
+	"crypto/elliptic"
+
 	"github.com/binance-chain/tss-lib/ecdsa/keygen"
 	"github.com/binance-chain/tss-lib/tss"
 )
@@ -26,6 +28,7 @@ type (
 		ok      []bool // `ok` tracks parties which have been verified by Update()
 		started bool
 		number  int
+		curve   elliptic.Curve
 	}
 	round1 struct {
 		*base
@@ -75,6 +78,10 @@ var (
 
 func (round *base) Params() *tss.Parameters {
 	return round.Parameters
+}
+
+func (round *base) GetCurve() elliptic.Curve {
+	return round.curve
 }
 
 func (round *base) RoundNumber() int {

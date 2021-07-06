@@ -37,8 +37,7 @@ func setUp(level string) {
 
 func TestE2EConcurrent(t *testing.T) {
 	setUp("info")
-
-	tss.SetCurve(edwards.Edwards())
+	curve := edwards.Edwards()
 
 	threshold, newThreshold := testThreshold, testThreshold
 
@@ -141,7 +140,7 @@ func TestE2EConcurrent(t *testing.T) {
 				for j, key := range newKeys {
 					// xj test: BigXj == xj*G
 					xj := key.Xi
-					gXj := crypto.ScalarBaseMult(tss.EC(), xj)
+					gXj := crypto.ScalarBaseMult(curve, xj)
 					BigXj := key.BigXj[j]
 					assert.True(t, BigXj.Equals(gXj), "ensure BigX_j == g^x_j")
 				}
@@ -205,7 +204,7 @@ signing:
 				// BEGIN EDDSA verify
 				pkX, pkY := signKeys[0].EDDSAPub.X(), signKeys[0].EDDSAPub.Y()
 				pk := edwards.PublicKey{
-					Curve: tss.EC(),
+					Curve: curve,
 					X:     pkX,
 					Y:     pkY,
 				}

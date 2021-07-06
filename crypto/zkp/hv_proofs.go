@@ -7,12 +7,12 @@
 package zkp
 
 import (
+	"crypto/elliptic"
 	"errors"
 	"math/big"
 
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
-	"github.com/binance-chain/tss-lib/tss"
 )
 
 type (
@@ -20,22 +20,24 @@ type (
 	TProof struct {
 		Alpha *crypto.ECPoint
 		T, U  *big.Int
+		Curve elliptic.Curve
 	}
 
 	// ZK proof for knowledge of sigma_i, l_i such that S_i = R^sigma_i, T_i = g^sigma_i h^l_i (GG20)
 	STProof struct {
 		Alpha, Beta *crypto.ECPoint
 		T, U        *big.Int
+		Curve       elliptic.Curve
 	}
 )
 
 // NewTProof constructs a new ZK proof of knowledge sigma_i, l_i such that T_i = g^sigma_i, h^l_i (GG20)
-func NewTProof(TI, h *crypto.ECPoint, sigmaI, lI *big.Int) (*TProof, error) {
+func NewTProof(curve elliptic.Curve, TI, h *crypto.ECPoint, sigmaI, lI *big.Int) (*TProof, error) {
 	if TI == nil || h == nil || sigmaI == nil || lI == nil ||
 		!TI.ValidateBasic() || !h.ValidateBasic() {
 		return nil, errors.New("NewTProof received nil or invalid value(s)")
 	}
-	ec := tss.EC()
+	ec := curve
 	ecParams := ec.Params()
 	q := ecParams.N
 	g := crypto.NewECPointNoCurveCheck(ec, ecParams.Gx, ecParams.Gy)
@@ -51,14 +53,14 @@ func NewTProof(TI, h *crypto.ECPoint, sigmaI, lI *big.Int) (*TProof, error) {
 		c = common.RejectionSample(q, cHash)
 	}
 	t, u := calculateTAndU(q, a, c, sigmaI, b, lI)
-	return &TProof{Alpha: alpha, T: t, U: u}, nil
+	return &TProof{Alpha: alpha, T: t, U: u, Curve: curve}, nil
 }
 
 func (pf *TProof) Verify(TI, h *crypto.ECPoint) bool {
 	if pf == nil || !pf.ValidateBasic() {
 		return false
 	}
-	ec := tss.EC()
+	ec := pf.Curve
 	ecParams := ec.Params()
 	q := ecParams.N
 	g := crypto.NewECPointNoCurveCheck(ec, ecParams.Gx, ecParams.Gy)
@@ -92,12 +94,12 @@ func (pf *TProof) ValidateBasic() bool {
 // ----- //
 
 // NewSTProof constructs a new ZK proof of knowledge sigma_i, l_i such that S_i = R^sigma_i, T_i = g^sigma_i h^l_i (GG20)
-func NewSTProof(TI, R, h *crypto.ECPoint, sigmaI, lI *big.Int) (*STProof, error) {
+func NewSTProof(curve elliptic.Curve, TI, R, h *crypto.ECPoint, sigmaI, lI *big.Int) (*STProof, error) {
 	if TI == nil || R == nil || h == nil || sigmaI == nil || lI == nil ||
 		!TI.ValidateBasic() || !R.ValidateBasic() || !h.ValidateBasic() {
 		return nil, errors.New("NewSTProof received nil or invalid value(s)")
 	}
-	ec := tss.EC()
+	ec := curve
 	ecParams := ec.Params()
 	q := ecParams.N
 	g := crypto.NewECPointNoCurveCheck(ec, ecParams.Gx, ecParams.Gy)
@@ -114,14 +116,14 @@ func NewSTProof(TI, R, h *crypto.ECPoint, sigmaI, lI *big.Int) (*STProof, error)
 		c = common.RejectionSample(q, cHash)
 	}
 	t, u := calculateTAndU(q, a, c, sigmaI, b, lI)
-	return &STProof{Alpha: alpha, Beta: beta, T: t, U: u}, nil
+	return &STProof{Alpha: alpha, Beta: beta, T: t, U: u, Curve: curve}, nil
 }
 
 func (pf *STProof) Verify(SI, TI, R, h *crypto.ECPoint) bool {
 	if pf == nil || !pf.ValidateBasic() {
 		return false
 	}
-	ec := tss.EC()
+	ec := pf.Curve
 	ecParams := ec.Params()
 	q := ecParams.N
 	g := crypto.NewECPointNoCurveCheck(ec, ecParams.Gx, ecParams.Gy)

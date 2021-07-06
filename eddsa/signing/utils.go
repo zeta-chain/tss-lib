@@ -10,9 +10,9 @@ import (
 	"math/big"
 
 	"github.com/agl/ed25519/edwards25519"
+	"github.com/decred/dcrd/dcrec/edwards/v2"
 
 	"github.com/binance-chain/tss-lib/common"
-	"github.com/binance-chain/tss-lib/tss"
 )
 
 func encodedBytesToBigInt(s *[32]byte) *big.Int {
@@ -104,7 +104,7 @@ func ecPointToExtendedElement(x *big.Int, y *big.Int) edwards25519.ExtendedGroup
 	encodedXBytes := bigIntToEncodedBytes(x)
 	encodedYBytes := bigIntToEncodedBytes(y)
 
-	z := common.GetRandomPositiveInt(tss.EC().Params().N)
+	z := common.GetRandomPositiveInt(edwards.Edwards().Params().N)
 	encodedZBytes := bigIntToEncodedBytes(z)
 
 	var fx, fy, fxy edwards25519.FieldElement

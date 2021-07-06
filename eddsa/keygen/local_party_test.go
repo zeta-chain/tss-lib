@@ -40,8 +40,7 @@ func setUp(level string) {
 func TestE2EConcurrentAndSaveFixtures(t *testing.T) {
 	setUp("info")
 
-	tss.SetCurve(edwards.Edwards())
-
+	curve := edwards.Edwards()
 	threshold := testThreshold
 	fixtures, pIDs, err := LoadKeygenTestFixtures(testParticipants)
 	if err != nil {
@@ -130,6 +129,7 @@ keygen:
 							Threshold: threshold,
 							ID:        P.PartyID().KeyInt(),
 							Share:     new(big.Int).SetBytes(share),
+							Curve:     curve,
 						}
 						pShares = append(pShares, shareStruct)
 					}
@@ -138,12 +138,12 @@ keygen:
 
 					// uG test: u*G[j] == V[0]
 					assert.Equal(t, uj, Pj.temp.ui)
-					uG := crypto.ScalarBaseMult(tss.EC(), uj)
+					uG := crypto.ScalarBaseMult(curve, uj)
 					assert.True(t, uG.Equals(Pj.temp.vs[0]), "ensure u*G[j] == V_0")
 
 					// xj tests: BigXj == xj*G
 					xj := Pj.data.Xi
-					gXj := crypto.ScalarBaseMult(tss.EC(), xj)
+					gXj := crypto.ScalarBaseMult(curve, xj)
 					BigXj := Pj.data.BigXj[j]
 					assert.True(t, BigXj.Equals(gXj), "ensure BigX_j == g^x_j")
 
@@ -154,20 +154,20 @@ keygen:
 						uj, err := pShares[:threshold].ReConstruct()
 						assert.NoError(t, err)
 						assert.NotEqual(t, parties[j].temp.ui, uj)
-						BigXjX, BigXjY := tss.EC().ScalarBaseMult(uj.Bytes())
+						BigXjX, BigXjY := curve.ScalarBaseMult(uj.Bytes())
 						assert.NotEqual(t, BigXjX, Pj.temp.vs[0].X())
 						assert.NotEqual(t, BigXjY, Pj.temp.vs[0].Y())
 					}
 					u = new(big.Int).Add(u, uj)
 				}
-				u = new(big.Int).Mod(u, tss.EC().Params().N)
+				u = new(big.Int).Mod(u, curve.Params().N)
 				scalar := make([]byte, 0, 32)
 				copy(scalar, u.Bytes())
 
 				// build eddsa key pair
 				pkX, pkY := save.EDDSAPub.X(), save.EDDSAPub.Y()
 				pk := edwards.PublicKey{
-					Curve: tss.EC(),
+					Curve: curve,
 					X:     pkX,
 					Y:     pkY,
 				}
@@ -182,7 +182,7 @@ keygen:
 
 				// public key tests
 				assert.NotZero(t, u, "u should not be zero")
-				ourPkX, ourPkY := tss.EC().ScalarBaseMult(u.Bytes())
+				ourPkX, ourPkY := curve.ScalarBaseMult(u.Bytes())
 				assert.Equal(t, pkX, ourPkX, "pkX should match expected pk derived from u")
 				assert.Equal(t, pkY, ourPkY, "pkY should match expected pk derived from u")
 				t.Log("Public key tests done.")

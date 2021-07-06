@@ -7,6 +7,7 @@
 package mta
 
 import (
+	"crypto/elliptic"
 	"errors"
 	"fmt"
 	"math/big"
@@ -14,7 +15,6 @@ import (
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
 	"github.com/binance-chain/tss-lib/crypto/paillier"
-	"github.com/binance-chain/tss-lib/tss"
 )
 
 const (
@@ -25,6 +25,7 @@ const (
 type (
 	ProofBob struct {
 		Z, ZPrm, T, V, W, S, S1, S2, T1, T2 *big.Int
+		elliptic.Curve
 	}
 
 	ProofBobWC struct {
@@ -35,14 +36,14 @@ type (
 
 // ProveBobWC implements Bob's proof both with or without check "ProveMtawc_Bob" and "ProveMta_Bob" used in the MtA protocol from GG18Spec (9) Figs. 10 & 11.
 // an absent `X` generates the proof without the X consistency check X = g^x
-func ProveBobWC(pk *paillier.PublicKey, NTilde, h1, h2, c1, c2, x, y, r *big.Int, X *crypto.ECPoint) (*ProofBobWC, error) {
+func ProveBobWC(curve elliptic.Curve, pk *paillier.PublicKey, NTilde, h1, h2, c1, c2, x, y, r *big.Int, X *crypto.ECPoint) (*ProofBobWC, error) {
 	if pk == nil || NTilde == nil || h1 == nil || h2 == nil || c1 == nil || c2 == nil || x == nil || y == nil || r == nil {
 		return nil, errors.New("ProveBob() received a nil argument")
 	}
 
 	NSq := pk.NSquare()
 
-	q := tss.EC().Params().N
+	q := curve.Params().N
 	q3 := new(big.Int).Mul(q, q)
 	q3.Mul(q3, q)
 	qNTilde := new(big.Int).Mul(q, NTilde)
@@ -65,9 +66,9 @@ func ProveBobWC(pk *paillier.PublicKey, NTilde, h1, h2, c1, c2, x, y, r *big.Int
 	gamma := common.GetRandomPositiveRelativelyPrimeInt(pk.N)
 
 	// 5.
-	u := crypto.NewECPointNoCurveCheck(tss.EC(), zero, zero) // initialization suppresses an IDE warning
+	u := crypto.NewECPointNoCurveCheck(curve, zero, zero) // initialization suppresses an IDE warning
 	if X != nil {
-		u = crypto.ScalarBaseMult(tss.EC(), alpha)
+		u = crypto.ScalarBaseMult(curve, alpha)
 	}
 
 	// 6.
@@ -128,29 +129,30 @@ func ProveBobWC(pk *paillier.PublicKey, NTilde, h1, h2, c1, c2, x, y, r *big.Int
 	t2 = t2.Add(t2, tau)
 
 	// the regular Bob proof ("without check") is extracted and returned by ProveBob
-	pf := &ProofBob{Z: z, ZPrm: zPrm, T: t, V: v, W: w, S: s, S1: s1, S2: s2, T1: t1, T2: t2}
+	pf := &ProofBob{Curve: curve, Z: z, ZPrm: zPrm, T: t, V: v, W: w, S: s, S1: s1, S2: s2, T1: t1, T2: t2}
 
 	// or the WC ("with check") version is used in round 2 of the signing protocol
 	return &ProofBobWC{ProofBob: pf, U: u}, nil
 }
 
 // ProveBob implements Bob's proof "ProveMta_Bob" used in the MtA protocol from GG18Spec (9) Fig. 11.
-func ProveBob(pk *paillier.PublicKey, NTilde, h1, h2, c1, c2, x, y, r *big.Int) (*ProofBob, error) {
+func ProveBob(curve elliptic.Curve, pk *paillier.PublicKey, NTilde, h1, h2, c1, c2, x, y, r *big.Int) (*ProofBob, error) {
 	// the Bob proof ("with check") contains the ProofBob "without check"; this method extracts and returns it
 	// X is supplied as nil to exclude it from the proof hash
-	pf, err := ProveBobWC(pk, NTilde, h1, h2, c1, c2, x, y, r, nil)
+	pf, err := ProveBobWC(curve, pk, NTilde, h1, h2, c1, c2, x, y, r, nil)
 	if err != nil {
 		return nil, err
 	}
 	return pf.ProofBob, nil
 }
 
-func ProofBobWCFromBytes(bzs [][]byte) (*ProofBobWC, error) {
+func ProofBobWCFromBytes(curve elliptic.Curve, bzs [][]byte) (*ProofBobWC, error) {
 	proofBob, err := ProofBobFromBytes(bzs)
 	if err != nil {
 		return nil, err
 	}
-	point, err := crypto.NewECPoint(tss.EC(),
+	proofBob.Curve = curve
+	point, err := crypto.NewECPoint(curve,
 		new(big.Int).SetBytes(bzs[10]),
 		new(big.Int).SetBytes(bzs[11]))
 	if err != nil {
@@ -190,7 +192,7 @@ func (pf *ProofBobWC) Verify(pk *paillier.PublicKey, NTilde, h1, h2, c1, c2 *big
 		return false
 	}
 
-	q := tss.EC().Params().N
+	q := pf.Curve.Params().N
 	q3 := new(big.Int).Mul(q, q)
 	q3.Mul(q3, q)
 
@@ -216,8 +218,8 @@ func (pf *ProofBobWC) Verify(pk *paillier.PublicKey, NTilde, h1, h2, c1, c2 *big
 
 	// 4. runs only in the "with check" mode from Fig. 10
 	if X != nil {
-		s1ModQ := new(big.Int).Mod(pf.S1, tss.EC().Params().N)
-		gS1 := crypto.ScalarBaseMult(tss.EC(), s1ModQ)
+		s1ModQ := new(big.Int).Mod(pf.S1, pf.Curve.Params().N)
+		gS1 := crypto.ScalarBaseMult(pf.Curve, s1ModQ)
 		xEU, err := X.ScalarMult(e).Add(pf.U)
 		if err != nil || !gS1.Equals(xEU) {
 			return false

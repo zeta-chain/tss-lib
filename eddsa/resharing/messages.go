@@ -14,6 +14,7 @@ import (
 	cmt "github.com/binance-chain/tss-lib/crypto/commitments"
 	"github.com/binance-chain/tss-lib/crypto/vss"
 	"github.com/binance-chain/tss-lib/tss"
+	"github.com/decred/dcrd/dcrec/edwards/v2"
 )
 
 // These messages were generated from Protocol Buffers definitions into eddsa-resharing.pb.go
@@ -59,7 +60,7 @@ func (m *DGRound1Message) ValidateBasic() bool {
 }
 
 func (m *DGRound1Message) UnmarshalEDDSAPub() (*crypto.ECPoint, error) {
-	return crypto.NewECPointFromProtobuf(m.GetEddsaPub())
+	return crypto.NewECPointFromProtobuf(edwards.Edwards(), m.GetEddsaPub())
 }
 
 func (m *DGRound1Message) UnmarshalVCommitment() *big.Int {

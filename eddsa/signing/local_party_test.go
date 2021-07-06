@@ -37,8 +37,7 @@ func setUp(level string) {
 func TestE2EConcurrent(t *testing.T) {
 	setUp("info")
 
-	tss.SetCurve(edwards.Edwards())
-
+	curve := edwards.Edwards()
 	threshold := testThreshold
 
 	// PHASE: load keygen fixtures
@@ -121,7 +120,7 @@ signing:
 				// BEGIN EDDSA verify
 				pkX, pkY := keys[0].EDDSAPub.X(), keys[0].EDDSAPub.Y()
 				pk := edwards.PublicKey{
-					Curve: tss.EC(),
+					Curve: curve,
 					X:     pkX,
 					Y:     pkY,
 				}

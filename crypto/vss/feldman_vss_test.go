@@ -10,24 +10,24 @@ import (
 	"math/big"
 	"testing"
 
+	s256k1 "github.com/btcsuite/btcd/btcec"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/binance-chain/tss-lib/common"
 	. "github.com/binance-chain/tss-lib/crypto/vss"
-	"github.com/binance-chain/tss-lib/tss"
 )
 
 func TestCreate(t *testing.T) {
 	num, threshold := 5, 3
-
-	secret := common.GetRandomPositiveInt(tss.EC().Params().N)
+	curve := s256k1.S256()
+	secret := common.GetRandomPositiveInt(curve.Params().N)
 
 	ids := make([]*big.Int, 0)
 	for i := 0; i < num; i++ {
-		ids = append(ids, common.GetRandomPositiveInt(tss.EC().Params().N))
+		ids = append(ids, common.GetRandomPositiveInt(curve.Params().N))
 	}
 
-	vs, _, err := Create(threshold, secret, ids)
+	vs, _, err := Create(curve, threshold, secret, ids)
 	assert.Nil(t, err)
 
 	assert.Equal(t, threshold+1, len(vs))
@@ -46,16 +46,17 @@ func TestCreate(t *testing.T) {
 }
 
 func TestVerify(t *testing.T) {
+	curve := s256k1.S256()
 	num, threshold := 5, 3
 
-	secret := common.GetRandomPositiveInt(tss.EC().Params().N)
+	secret := common.GetRandomPositiveInt(curve.Params().N)
 
 	ids := make([]*big.Int, 0)
 	for i := 0; i < num; i++ {
-		ids = append(ids, common.GetRandomPositiveInt(tss.EC().Params().N))
+		ids = append(ids, common.GetRandomPositiveInt(curve.Params().N))
 	}
 
-	vs, shares, err := Create(threshold, secret, ids)
+	vs, shares, err := Create(curve, threshold, secret, ids)
 	assert.NoError(t, err)
 
 	for i := 0; i < num; i++ {
@@ -65,15 +66,15 @@ func TestVerify(t *testing.T) {
 
 func TestReconstruct(t *testing.T) {
 	num, threshold := 5, 3
-
-	secret := common.GetRandomPositiveInt(tss.EC().Params().N)
+	curve := s256k1.S256()
+	secret := common.GetRandomPositiveInt(curve.Params().N)
 
 	ids := make([]*big.Int, 0)
 	for i := 0; i < num; i++ {
-		ids = append(ids, common.GetRandomPositiveInt(tss.EC().Params().N))
+		ids = append(ids, common.GetRandomPositiveInt(curve.Params().N))
 	}
 
-	_, shares, err := Create(threshold, secret, ids)
+	_, shares, err := Create(curve, threshold, secret, ids)
 	assert.NoError(t, err)
 
 	secret2, err2 := shares[:threshold-1].ReConstruct()
