@@ -12,8 +12,23 @@ import (
 	"testing"
 
 	"github.com/binance-chain/tss-lib/common"
+	"github.com/stretchr/testify/assert"
 )
 
+func TestSHA512_265iV2(t *testing.T) {
+
+	randomVal := common.MustGetRandomInt(256)
+	values := []*big.Int{randomVal}
+	for i := 0; i < 10; i++ {
+		values = append(values, common.MustGetRandomInt(256))
+	}
+	result1 := common.SHA512_256i(values...)
+
+	values[10] = common.MustGetRandomInt(256)
+	result2 := common.SHA512_256i(values...)
+	assert.True(t, result1.Cmp(result2) != 0)
+
+}
 func TestRejectionSample(t *testing.T) {
 	curveQ := common.GetRandomPrimeInt(256)
 	randomQ := common.MustGetRandomInt(64)
