@@ -15,6 +15,10 @@ import (
 	"github.com/binance-chain/tss-lib/tss"
 )
 
+const (
+	paillierBitsLen = 2048
+)
+
 func (round *round2) Start() *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
@@ -32,10 +36,20 @@ func (round *round2) Start() *tss.Error {
 	wg := new(sync.WaitGroup)
 	for j, msg := range round.temp.kgRound1Messages {
 		r1msg := msg.Content().(*KGRound1Message)
-		H1j, H2j, NTildej :=
+		H1j, H2j, NTildej, paillierPubKeyj :=
 			r1msg.UnmarshalH1(),
 			r1msg.UnmarshalH2(),
-			r1msg.UnmarshalNTilde()
+			r1msg.UnmarshalNTilde(),
+			r1msg.UnmarshalPaillierPK()
+
+		if paillierPubKeyj.N.BitLen() != paillierBitsLen {
+			return round.WrapError(errors.New("got paillier modulus with insufficient bits for this party"), msg.GetFrom())
+		}
+
+		if NTildej.BitLen() != paillierBitsLen {
+			return round.WrapError(errors.New("got NTildej with insufficient bits for this party"), msg.GetFrom())
+		}
+
 		if H1j.Cmp(H2j) == 0 {
 			return round.WrapError(errors.New("h1j and h2j were equal for this party"), msg.GetFrom())
 		}
