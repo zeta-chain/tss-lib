@@ -11,6 +11,7 @@
 package vss
 
 import (
+	"crypto/elliptic"
 	"errors"
 	"fmt"
 	"math/big"
@@ -39,6 +40,23 @@ var (
 	one  = big.NewInt(1)
 )
 
+// Check share ids of Shamir's Secret Sharing, return error if duplicate or 0 value found
+func CheckIndexes(ec elliptic.Curve, indexes []*big.Int) ([]*big.Int, error) {
+	visited := make(map[string]struct{})
+	for _, v := range indexes {
+		vMod := new(big.Int).Mod(v, ec.Params().N)
+		if vMod.Cmp(zero) == 0 {
+			return nil, errors.New("party index should not be 0")
+		}
+		vModStr := vMod.String()
+		if _, ok := visited[vModStr]; ok {
+			return nil, fmt.Errorf("duplicate indexes %s", vModStr)
+		}
+		visited[vModStr] = struct{}{}
+	}
+	return indexes, nil
+}
+
 // Returns a new array of secret shares created by Shamir's Secret Sharing Algorithm,
 // requiring a minimum number of shares to recreate, of length shares, from the input secret
 //
@@ -48,6 +66,10 @@ func Create(threshold int, secret *big.Int, indexes []*big.Int) (Vs, Shares, err
 	}
 	if threshold < 1 {
 		return nil, nil, errors.New("vss threshold < 1")
+	}
+	ids, err := CheckIndexes(tss.EC(), indexes)
+	if err != nil {
+		return nil, nil, err
 	}
 	num := len(indexes)
 	if num < threshold {
@@ -63,11 +85,8 @@ func Create(threshold int, secret *big.Int, indexes []*big.Int) (Vs, Shares, err
 
 	shares := make(Shares, num)
 	for i := 0; i < num; i++ {
-		if indexes[i].Cmp(big.NewInt(0)) == 0 {
-			return nil, nil, fmt.Errorf("party index should not be 0")
-		}
-		share := evaluatePolynomial(threshold, poly, indexes[i])
-		shares[i] = &Share{Threshold: threshold, ID: indexes[i], Share: share}
+		share := evaluatePolynomial(threshold, poly, ids[i])
+		shares[i] = &Share{Threshold: threshold, ID: ids[i], Share: share}
 	}
 	return v, shares, nil
 }
