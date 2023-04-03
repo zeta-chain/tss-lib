@@ -28,7 +28,7 @@ func SHA512_256(in ...[]byte) []byte {
 	}
 	bzSize := 0
 	// prevent hash collisions with this prefix containing the block count
-	inLenBz := make([]byte, 64/8)
+	inLenBz := make([]byte, 8) // 64-bits
 	// converting between int and uint64 doesn't change the sign bit, but it may be interpreted as a larger value.
 	// this prefix is never read/interpreted, so that doesn't matter.
 	binary.LittleEndian.PutUint64(inLenBz, uint64(inLen))
@@ -64,13 +64,13 @@ func SHA512_256i(in ...*big.Int) *big.Int {
 	}
 	bzSize := 0
 	// prevent hash collisions with this prefix containing the block count
-	inLenBz := make([]byte, 64/8)
+	inLenBz := make([]byte, 8)
 	// converting between int and uint64 doesn't change the sign bit, but it may be interpreted as a larger value.
 	// this prefix is never read/interpreted, so that doesn't matter.
 	binary.LittleEndian.PutUint64(inLenBz, uint64(inLen))
 	ptrs := make([][]byte, inLen)
 	for i, n := range in {
-		ptrs[i] = n.Bytes()
+		ptrs[i] = append(n.Bytes(), byte(n.Sign()))
 		bzSize += len(ptrs[i])
 	}
 	dataCap := len(inLenBz) + bzSize + inLen + (inLen * 8)
@@ -99,7 +99,7 @@ func SHA512_256iOne(in *big.Int) *big.Int {
 	if in == nil {
 		return nil
 	}
-	data = in.Bytes()
+	data = append(in.Bytes(), byte(in.Sign()))
 	// n < len(data) or an error will never happen.
 	// see: https://golang.org/pkg/hash/#Hash and https://github.com/golang/go/wiki/Hashing#the-hashhash-interface
 	if _, err := state.Write(data); err != nil {
