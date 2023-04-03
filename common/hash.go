@@ -64,7 +64,7 @@ func SHA512_256i(in ...*big.Int) *big.Int {
 	}
 	bzSize := 0
 	// prevent hash collisions with this prefix containing the block count
-	inLenBz := make([]byte, 8)
+	inLenBz := make([]byte, 8) // 64-bits
 	// converting between int and uint64 doesn't change the sign bit, but it may be interpreted as a larger value.
 	// this prefix is never read/interpreted, so that doesn't matter.
 	binary.LittleEndian.PutUint64(inLenBz, uint64(inLen))
