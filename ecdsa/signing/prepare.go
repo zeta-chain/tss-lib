@@ -7,17 +7,17 @@
 package signing
 
 import (
+	"crypto/elliptic"
 	"fmt"
 	"math/big"
 
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
-	"github.com/binance-chain/tss-lib/tss"
 )
 
 // PrepareForSigning(), GG18Spec (11) Fig. 14
-func PrepareForSigning(i, pax int, xi *big.Int, ks []*big.Int, bigXs []*crypto.ECPoint) (wi *big.Int, bigWs []*crypto.ECPoint, err error) {
-	modQ := common.ModInt(tss.EC().Params().N)
+func PrepareForSigning(ec elliptic.Curve, i, pax int, xi *big.Int, ks []*big.Int, bigXs []*crypto.ECPoint) (wi *big.Int, bigWs []*crypto.ECPoint) {
+	modQ := common.ModInt(ec.Params().N)
 	if len(ks) != len(bigXs) {
 		panic(fmt.Errorf("PrepareForSigning: len(ks) != len(bigXs) (%d != %d)", len(ks), len(bigXs)))
 	}
@@ -29,7 +29,7 @@ func PrepareForSigning(i, pax int, xi *big.Int, ks []*big.Int, bigXs []*crypto.E
 	}
 
 	// 2-4.
-	wi = new(big.Int).Set(xi)
+	wi = xi
 	for j := 0; j < pax; j++ {
 		if j == i {
 			continue
@@ -40,7 +40,7 @@ func PrepareForSigning(i, pax int, xi *big.Int, ks []*big.Int, bigXs []*crypto.E
 			panic(fmt.Errorf("index of two parties are equal"))
 		}
 		// big.Int Div is calculated as: a/b = a * modInv(b,q)
-		coef := modQ.Mul(ks[j], modQ.Inverse(new(big.Int).Sub(ksj, ksi)))
+		coef := modQ.Mul(ks[j], modQ.ModInverse(new(big.Int).Sub(ksj, ksi)))
 		wi = modQ.Mul(wi, coef)
 	}
 
@@ -52,22 +52,16 @@ func PrepareForSigning(i, pax int, xi *big.Int, ks []*big.Int, bigXs []*crypto.E
 			if j == c {
 				continue
 			}
-			ksc, ksj := ks[c], ks[j]
+			ksc := ks[c]
+			ksj := ks[j]
 			if ksj.Cmp(ksc) == 0 {
-				err = fmt.Errorf("the indices of two parties are equal")
-				return
+				panic(fmt.Errorf("index of two parties are equal"))
 			}
 			// big.Int Div is calculated as: a/b = a * modInv(b,q)
-			iota := modQ.Mul(ksc, modQ.Inverse(new(big.Int).Sub(ksc, ksj)))
+			iota := modQ.Mul(ksc, modQ.ModInverse(new(big.Int).Sub(ksc, ksj)))
 			bigWj = bigWj.ScalarMult(iota)
 		}
 		bigWs[j] = bigWj
-	}
-
-	// assertion: g^w_i == W_i
-	if !crypto.ScalarBaseMult(tss.EC(), wi).Equals(bigWs[i]) {
-		err = fmt.Errorf("assertion failed: g^w_i == W_i")
-		return
 	}
 	return
 }

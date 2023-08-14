@@ -9,15 +9,18 @@ package keygen
 import (
 	"math/big"
 
+	"github.com/binance-chain/tss-lib/crypto/facproof"
+
 	"github.com/binance-chain/tss-lib/common"
 	cmt "github.com/binance-chain/tss-lib/crypto/commitments"
-	"github.com/binance-chain/tss-lib/crypto/dlnp"
+	"github.com/binance-chain/tss-lib/crypto/dlnproof"
 	"github.com/binance-chain/tss-lib/crypto/paillier"
 	"github.com/binance-chain/tss-lib/crypto/vss"
 	"github.com/binance-chain/tss-lib/tss"
 )
 
 // These messages were generated from Protocol Buffers definitions into ecdsa-keygen.pb.go
+// The following messages are registered on the Protocol Buffers "wire"
 
 var (
 	// Ensure that keygen messages implement ValidateBasic
@@ -36,17 +39,17 @@ func NewKGRound1Message(
 	ct cmt.HashCommitment,
 	paillierPK *paillier.PublicKey,
 	nTildeI, h1I, h2I *big.Int,
-	dlnProof1, dlnProof2 *dlnp.Proof,
+	dlnProof1, dlnProof2 *dlnproof.Proof,
 ) (tss.ParsedMessage, error) {
 	meta := tss.MessageRouting{
 		From:        from,
 		IsBroadcast: true,
 	}
-	dlnProof1Bz, err := dlnProof1.Marshal()
+	dlnProof1Bz, err := dlnProof1.Serialize()
 	if err != nil {
 		return nil, err
 	}
-	dlnProof2Bz, err := dlnProof2.Marshal()
+	dlnProof2Bz, err := dlnProof2.Serialize()
 	if err != nil {
 		return nil, err
 	}
@@ -71,8 +74,8 @@ func (m *KGRound1Message) ValidateBasic() bool {
 		common.NonEmptyBytes(m.GetH1()) &&
 		common.NonEmptyBytes(m.GetH2()) &&
 		// expected len of dln proof = sizeof(int64) + len(alpha) + len(t)
-		common.NonEmptyMultiBytes(m.GetDlnproof_1(), 2+(dlnp.Iterations*2)) &&
-		common.NonEmptyMultiBytes(m.GetDlnproof_2(), 2+(dlnp.Iterations*2))
+		common.NonEmptyMultiBytes(m.GetDlnproof_1(), 2+(dlnproof.Iterations*2)) &&
+		common.NonEmptyMultiBytes(m.GetDlnproof_2(), 2+(dlnproof.Iterations*2))
 }
 
 func (m *KGRound1Message) UnmarshalCommitment() *big.Int {
@@ -95,12 +98,12 @@ func (m *KGRound1Message) UnmarshalH2() *big.Int {
 	return new(big.Int).SetBytes(m.GetH2())
 }
 
-func (m *KGRound1Message) UnmarshalDLNProof1() (*dlnp.Proof, error) {
-	return dlnp.UnmarshalProof(m.GetDlnproof_1())
+func (m *KGRound1Message) UnmarshalDLNProof1() (*dlnproof.Proof, error) {
+	return dlnproof.UnmarshalDLNProof(m.GetDlnproof_1())
 }
 
-func (m *KGRound1Message) UnmarshalDLNProof2() (*dlnp.Proof, error) {
-	return dlnp.UnmarshalProof(m.GetDlnproof_2())
+func (m *KGRound1Message) UnmarshalDLNProof2() (*dlnproof.Proof, error) {
+	return dlnproof.UnmarshalDLNProof(m.GetDlnproof_2())
 }
 
 // ----- //
@@ -108,14 +111,17 @@ func (m *KGRound1Message) UnmarshalDLNProof2() (*dlnp.Proof, error) {
 func NewKGRound2Message1(
 	to, from *tss.PartyID,
 	share *vss.Share,
+	proof *facproof.ProofFac,
 ) tss.ParsedMessage {
 	meta := tss.MessageRouting{
 		From:        from,
 		To:          []*tss.PartyID{to},
 		IsBroadcast: false,
 	}
+	proofBzs := proof.Bytes()
 	content := &KGRound2Message1{
-		Share: share.Share.Bytes(),
+		Share:    share.Share.Bytes(),
+		FacProof: proofBzs[:],
 	}
 	msg := tss.NewMessageWrapper(meta, content)
 	return tss.NewMessage(meta, content, msg)
@@ -124,10 +130,16 @@ func NewKGRound2Message1(
 func (m *KGRound2Message1) ValidateBasic() bool {
 	return m != nil &&
 		common.NonEmptyBytes(m.GetShare())
+	// This is commented for backward compatibility, which msg has no proof
+	// && common.NonEmptyMultiBytes(m.GetFacProof(), facproof.ProofFacBytesParts)
 }
 
 func (m *KGRound2Message1) UnmarshalShare() *big.Int {
 	return new(big.Int).SetBytes(m.Share)
+}
+
+func (m *KGRound2Message1) UnmarshalFacProof() (*facproof.ProofFac, error) {
+	return facproof.NewProofFromBytes(m.GetFacProof())
 }
 
 // ----- //

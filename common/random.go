@@ -35,14 +35,14 @@ func MustGetRandomInt(bits int) *big.Int {
 	return n
 }
 
-func GetRandomPositiveInt(upper *big.Int) *big.Int {
-	if upper == nil || zero.Cmp(upper) != -1 {
+func GetRandomPositiveInt(lessThan *big.Int) *big.Int {
+	if lessThan == nil || zero.Cmp(lessThan) != -1 {
 		return nil
 	}
 	var try *big.Int
 	for {
-		try = MustGetRandomInt(upper.BitLen())
-		if try.Cmp(upper) < 0 && try.Cmp(zero) >= 0 {
+		try = MustGetRandomInt(lessThan.BitLen())
+		if try.Cmp(lessThan) < 0 && try.Cmp(zero) >= 0 {
 			break
 		}
 	}

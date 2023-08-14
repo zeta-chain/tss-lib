@@ -7,6 +7,7 @@
 package signing
 
 import (
+	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/ecdsa/keygen"
 	"github.com/binance-chain/tss-lib/tss"
 )
@@ -19,10 +20,10 @@ type (
 	base struct {
 		*tss.Parameters
 		key     *keygen.LocalPartySaveData
-		data    *SignatureData
+		data    *common.SignatureData
 		temp    *localTempData
 		out     chan<- tss.Message
-		end     chan<- *SignatureData
+		end     chan<- common.SignatureData
 		ok      []bool // `ok` tracks parties which have been verified by Update()
 		started bool
 		number  int
@@ -44,19 +45,18 @@ type (
 	}
 	round6 struct {
 		*round5
-
-		// Trigger for when a consistency check fails during Phase 5 of the protocol, resulting in a Type 5 identifiable abort (GG20)
-		abortingT5 bool
 	}
-	// The final round for the one-round signing mode (see the README)
 	round7 struct {
 		*round6
-
-		// Trigger for when a consistency check fails during Phase 6 of the protocol, resulting in a Type 7 identifiable abort (GG20)
-		abortingT7 bool
+	}
+	round8 struct {
+		*round7
+	}
+	round9 struct {
+		*round8
 	}
 	finalization struct {
-		*round7
+		*round9
 	}
 )
 
@@ -68,6 +68,8 @@ var (
 	_ tss.Round = (*round5)(nil)
 	_ tss.Round = (*round6)(nil)
 	_ tss.Round = (*round7)(nil)
+	_ tss.Round = (*round8)(nil)
+	_ tss.Round = (*round9)(nil)
 	_ tss.Round = (*finalization)(nil)
 )
 

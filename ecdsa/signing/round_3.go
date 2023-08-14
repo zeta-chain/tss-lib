@@ -14,9 +14,7 @@ import (
 	errorspkg "github.com/pkg/errors"
 
 	"github.com/binance-chain/tss-lib/common"
-	"github.com/binance-chain/tss-lib/crypto"
 	"github.com/binance-chain/tss-lib/crypto/mta"
-	"github.com/binance-chain/tss-lib/crypto/zkp"
 	"github.com/binance-chain/tss-lib/tss"
 )
 
@@ -28,13 +26,10 @@ func (round *round3) Start() *tss.Error {
 	round.started = true
 	round.resetOK()
 
-	Pi := round.PartyID()
-	i := Pi.Index
+	var alphas = make([]*big.Int, len(round.Parties().IDs()))
+	var us = make([]*big.Int, len(round.Parties().IDs()))
 
-	alphaIJs := make([]*big.Int, len(round.Parties().IDs()))
-	muIJs := make([]*big.Int, len(round.Parties().IDs()))    // mod q'd
-	muIJRecs := make([]*big.Int, len(round.Parties().IDs())) // raw recovered
-	muRandIJ := make([]*big.Int, len(round.Parties().IDs()))
+	i := round.PartyID().Index
 
 	errChs := make(chan *tss.Error, (len(round.Parties().IDs())-1)*2)
 	wg := sync.WaitGroup{}
@@ -49,51 +44,48 @@ func (round *round3) Start() *tss.Error {
 			r2msg := round.temp.signRound2Messages[j].Content().(*SignRound2Message)
 			proofBob, err := r2msg.UnmarshalProofBob()
 			if err != nil {
-				errChs <- round.WrapError(errorspkg.Wrapf(err, "MtA: UnmarshalProofBob failed"), Pj)
+				errChs <- round.WrapError(errorspkg.Wrapf(err, "UnmarshalProofBob failed"), Pj)
 				return
 			}
-			alphaIJ, err := mta.AliceEnd(
+			alphaIj, err := mta.AliceEnd(
+				round.Params().EC(),
 				round.key.PaillierPKs[i],
 				proofBob,
 				round.key.H1j[i],
 				round.key.H2j[i],
-				round.temp.c1Is[j],
+				round.temp.cis[j],
 				new(big.Int).SetBytes(r2msg.GetC1()),
 				round.key.NTildej[i],
 				round.key.PaillierSK)
+			alphas[j] = alphaIj
 			if err != nil {
 				errChs <- round.WrapError(err, Pj)
-				return
 			}
-			alphaIJs[j] = alphaIJ
-			round.temp.r5AbortData.AlphaIJ[j] = alphaIJ.Bytes()
 		}(j, Pj)
 		// Alice_end_wc
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
 			r2msg := round.temp.signRound2Messages[j].Content().(*SignRound2Message)
-			proofBobWC, err := r2msg.UnmarshalProofBobWC()
+			proofBobWC, err := r2msg.UnmarshalProofBobWC(round.Parameters.EC())
 			if err != nil {
-				errChs <- round.WrapError(errorspkg.Wrapf(err, "MtA: UnmarshalProofBobWC failed"), Pj)
+				errChs <- round.WrapError(errorspkg.Wrapf(err, "UnmarshalProofBobWC failed"), Pj)
 				return
 			}
-			muIJ, muIJRec, muIJRand, err := mta.AliceEndWC(
+			uIj, err := mta.AliceEndWC(
+				round.Params().EC(),
 				round.key.PaillierPKs[i],
 				proofBobWC,
 				round.temp.bigWs[j],
-				round.temp.c1Is[j],
+				round.temp.cis[j],
 				new(big.Int).SetBytes(r2msg.GetC2()),
 				round.key.NTildej[i],
 				round.key.H1j[i],
 				round.key.H2j[i],
 				round.key.PaillierSK)
+			us[j] = uIj
 			if err != nil {
 				errChs <- round.WrapError(err, Pj)
-				return
 			}
-			muIJs[j] = muIJ       // mod q'd
-			muIJRecs[j] = muIJRec // raw recovered
-			muRandIJ[j] = muIJRand
 		}(j, Pj)
 	}
 
@@ -107,60 +99,25 @@ func (round *round3) Start() *tss.Error {
 	if len(culprits) > 0 {
 		return round.WrapError(errors.New("failed to calculate Alice_end or Alice_end_wc"), culprits...)
 	}
-	// for identifying aborts in round 7: muIJs, revealed during Type 7 identified abort
-	round.temp.r7AbortData.MuIJ = common.BigIntsToBytes(muIJRecs)
-	round.temp.r7AbortData.MuRandIJ = common.BigIntsToBytes(muRandIJ)
 
-	q := tss.EC().Params().N
-	modN := common.ModInt(q)
-
-	kI := new(big.Int).SetBytes(round.temp.KI)
-	deltaI := modN.Mul(kI, round.temp.gammaI)
-	sigmaI := modN.Mul(kI, round.temp.wI)
-
-	// clear wI from temp memory
-	round.temp.wI.Set(zero)
-	round.temp.wI = zero
+	modN := common.ModInt(round.Params().EC().Params().N)
+	thelta := modN.Mul(round.temp.k, round.temp.gamma)
+	sigma := modN.Mul(round.temp.k, round.temp.w)
 
 	for j := range round.Parties().IDs() {
-		if j == i {
+		if j == round.PartyID().Index {
 			continue
 		}
-		beta := modN.Sub(zero, round.temp.vJIs[j])
-		deltaI.Add(deltaI, alphaIJs[j].Add(alphaIJs[j], round.temp.betas[j]))
-		sigmaI.Add(sigmaI, muIJs[j].Add(muIJs[j], beta))
-		deltaI.Mod(deltaI, q)
-		sigmaI.Mod(sigmaI, q)
-	}
-	// nil sensitive data for gc
-	round.temp.betas, round.temp.vJIs = nil, nil
-
-	// gg20: calculate T_i = g^sigma_i h^l_i
-	lI := common.GetRandomPositiveInt(q)
-	h, err := crypto.ECBasePoint2(tss.EC())
-	if err != nil {
-		return round.WrapError(err, Pi)
-	}
-	hLI := h.ScalarMult(lI)
-	gSigmaI := crypto.ScalarBaseMult(tss.EC(), sigmaI)
-	TI, err := gSigmaI.Add(hLI)
-	if err != nil {
-		return round.WrapError(err, Pi)
-	}
-	// gg20: generate the ZK proof of T_i, verified in ValidateBasic for the round 3 message
-	tProof, err := zkp.NewTProof(TI, h, sigmaI, lI)
-	if err != nil {
-		return round.WrapError(err, Pi)
+		thelta = modN.Add(thelta, alphas[j].Add(alphas[j], round.temp.betas[j]))
+		sigma = modN.Add(sigma, us[j].Add(us[j], round.temp.vs[j]))
 	}
 
-	round.temp.TI = TI
-	round.temp.lI = lI
-	round.temp.deltaI = deltaI
-	round.temp.sigmaI = sigmaI
-
-	r3msg := NewSignRound3Message(Pi, deltaI, TI, tProof)
-	round.temp.signRound3Messages[i] = r3msg
+	round.temp.theta = thelta
+	round.temp.sigma = sigma
+	r3msg := NewSignRound3Message(round.PartyID(), thelta)
+	round.temp.signRound3Messages[round.PartyID().Index] = r3msg
 	round.out <- r3msg
+
 	return nil
 }
 

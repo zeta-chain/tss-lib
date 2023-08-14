@@ -7,6 +7,7 @@
 package mta
 
 import (
+	"context"
 	"math/big"
 	"testing"
 	"time"
@@ -28,7 +29,10 @@ const (
 func TestShareProtocol(t *testing.T) {
 	q := tss.EC().Params().N
 
-	sk, pk, err := paillier.GenerateKeyPair(testPaillierKeyLength, 10*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+
+	sk, pk, err := paillier.GenerateKeyPair(ctx, testPaillierKeyLength)
 	assert.NoError(t, err)
 
 	a := common.GetRandomPositiveInt(q)
@@ -39,15 +43,13 @@ func TestShareProtocol(t *testing.T) {
 	NTildej, h1j, h2j, err := keygen.LoadNTildeH1H2FromTestFixture(1)
 	assert.NoError(t, err)
 
-	cA, rA, err := pk.EncryptAndReturnRandomness(a)
-	assert.NoError(t, err)
-	pf, err := AliceInit(pk, a, cA, rA, NTildej, h1j, h2j)
+	cA, pf, err := AliceInit(tss.EC(), pk, a, NTildej, h1j, h2j)
 	assert.NoError(t, err)
 
-	_, cB, betaPrm, pfB, err := BobMid(pk, pf, b, cA, NTildei, h1i, h2i, NTildej, h1j, h2j)
+	_, cB, betaPrm, pfB, err := BobMid(tss.EC(), pk, pf, b, cA, NTildei, h1i, h2i, NTildej, h1j, h2j)
 	assert.NoError(t, err)
 
-	alpha, err := AliceEnd(pk, pfB, h1i, h2i, cA, cB, NTildei, sk)
+	alpha, err := AliceEnd(tss.EC(), pk, pfB, h1i, h2i, cA, cB, NTildei, sk)
 	assert.NoError(t, err)
 
 	// expect: alpha = ab + betaPrm
@@ -60,7 +62,10 @@ func TestShareProtocol(t *testing.T) {
 func TestShareProtocolWC(t *testing.T) {
 	q := tss.EC().Params().N
 
-	sk, pk, err := paillier.GenerateKeyPair(testPaillierKeyLength, 10*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+
+	sk, pk, err := paillier.GenerateKeyPair(ctx, testPaillierKeyLength)
 	assert.NoError(t, err)
 
 	a := common.GetRandomPositiveInt(q)
@@ -72,23 +77,20 @@ func TestShareProtocolWC(t *testing.T) {
 	NTildej, h1j, h2j, err := keygen.LoadNTildeH1H2FromTestFixture(1)
 	assert.NoError(t, err)
 
-	cA, rA, err := pk.EncryptAndReturnRandomness(a)
-	assert.NoError(t, err)
-	pf, err := AliceInit(pk, a, cA, rA, NTildej, h1j, h2j)
+	cA, pf, err := AliceInit(tss.EC(), pk, a, NTildej, h1j, h2j)
 	assert.NoError(t, err)
 
 	gBPoint, err := crypto.NewECPoint(tss.EC(), gBX, gBY)
 	assert.NoError(t, err)
-	betaPrm, cB, pfB, err := BobMidWC(pk, pf, b, cA, NTildei, h1i, h2i, NTildej, h1j, h2j, gBPoint)
+	_, cB, betaPrm, pfB, err := BobMidWC(tss.EC(), pk, pf, b, cA, NTildei, h1i, h2i, NTildej, h1j, h2j, gBPoint)
 	assert.NoError(t, err)
 
-	muIJ, _, muRandIJ, err := AliceEndWC(pk, pfB, gBPoint, cA, cB, NTildei, h1i, h2i, sk)
+	alpha, err := AliceEndWC(tss.EC(), pk, pfB, gBPoint, cA, cB, NTildei, h1i, h2i, sk)
 	assert.NoError(t, err)
-	assert.NotNil(t, muRandIJ)
 
-	// expect: muIJ = ab + betaPrm
+	// expect: alpha = ab + betaPrm
 	aTimesB := new(big.Int).Mul(a, b)
 	aTimesBPlusBeta := new(big.Int).Add(aTimesB, betaPrm)
 	aTimesBPlusBetaModQ := new(big.Int).Mod(aTimesBPlusBeta, q)
-	assert.Equal(t, 0, muIJ.Cmp(aTimesBPlusBetaModQ))
+	assert.Equal(t, 0, alpha.Cmp(aTimesBPlusBetaModQ))
 }

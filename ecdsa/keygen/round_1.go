@@ -13,7 +13,7 @@ import (
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
 	cmts "github.com/binance-chain/tss-lib/crypto/commitments"
-	"github.com/binance-chain/tss-lib/crypto/dlnp"
+	"github.com/binance-chain/tss-lib/crypto/dlnproof"
 	"github.com/binance-chain/tss-lib/crypto/vss"
 	"github.com/binance-chain/tss-lib/tss"
 )
@@ -40,13 +40,13 @@ func (round *round1) Start() *tss.Error {
 	i := Pi.Index
 
 	// 1. calculate "partial" key share ui
-	ui := common.GetRandomPositiveInt(tss.EC().Params().N)
+	ui := common.GetRandomPositiveInt(round.Params().EC().Params().N)
 
 	round.temp.ui = ui
 
 	// 2. compute the vss shares
 	ids := round.Parties().IDs().Keys()
-	vs, shares, err := vss.Create(round.Threshold(), ui, ids)
+	vs, shares, err := vss.Create(round.Params().EC(), round.Threshold(), ui, ids)
 	if err != nil {
 		return round.WrapError(err, Pi)
 	}
@@ -74,7 +74,7 @@ func (round *round1) Start() *tss.Error {
 	} else if round.save.LocalPreParams.ValidateWithProof() {
 		preParams = &round.save.LocalPreParams
 	} else {
-		preParams, err = GeneratePreParams(round.SafePrimeGenTimeout(), 3)
+		preParams, err = GeneratePreParams(round.SafePrimeGenTimeout(), round.Concurrency())
 		if err != nil {
 			return round.WrapError(errors.New("pre-params generation failed"), Pi)
 		}
@@ -92,8 +92,8 @@ func (round *round1) Start() *tss.Error {
 		preParams.P,
 		preParams.Q,
 		preParams.NTildei
-	dlnProof1 := dlnp.NewProof(h1i, h2i, alpha, p, q, NTildei)
-	dlnProof2 := dlnp.NewProof(h2i, h1i, beta, p, q, NTildei)
+	dlnProof1 := dlnproof.NewDLNProof(h1i, h2i, alpha, p, q, NTildei)
+	dlnProof2 := dlnproof.NewDLNProof(h2i, h1i, beta, p, q, NTildei)
 
 	// for this P: SAVE
 	// - shareID

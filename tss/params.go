@@ -7,20 +7,20 @@
 package tss
 
 import (
-	"errors"
+	"crypto/elliptic"
+	"runtime"
 	"time"
-
-	"github.com/binance-chain/tss-lib/common"
 )
 
 type (
 	Parameters struct {
-		partyID                 *PartyID
-		parties                 *PeerContext
-		partyCount              int
-		threshold               int
-		safePrimeGenTimeout     time.Duration
-		unsafeKGIgnoreH1H2Dupes bool
+		ec                  elliptic.Curve
+		partyID             *PartyID
+		parties             *PeerContext
+		partyCount          int
+		threshold           int
+		concurrency         int
+		safePrimeGenTimeout time.Duration
 	}
 
 	ReSharingParameters struct {
@@ -36,23 +36,20 @@ const (
 )
 
 // Exported, used in `tss` client
-func NewParameters(ctx *PeerContext, partyID *PartyID, partyCount, threshold int, optionalSafePrimeGenTimeout ...time.Duration) *Parameters {
-	var safePrimeGenTimeout time.Duration
-	if 0 < len(optionalSafePrimeGenTimeout) {
-		if 1 < len(optionalSafePrimeGenTimeout) {
-			panic(errors.New("GeneratePreParams: expected 0 or 1 item in `optionalSafePrimeGenTimeout`"))
-		}
-		safePrimeGenTimeout = optionalSafePrimeGenTimeout[0]
-	} else {
-		safePrimeGenTimeout = defaultSafePrimeGenTimeout
-	}
+func NewParameters(ec elliptic.Curve, ctx *PeerContext, partyID *PartyID, partyCount, threshold int) *Parameters {
 	return &Parameters{
+		ec:                  ec,
 		parties:             ctx,
 		partyID:             partyID,
 		partyCount:          partyCount,
 		threshold:           threshold,
-		safePrimeGenTimeout: safePrimeGenTimeout,
+		concurrency:         runtime.GOMAXPROCS(0),
+		safePrimeGenTimeout: defaultSafePrimeGenTimeout,
 	}
+}
+
+func (params *Parameters) EC() elliptic.Curve {
+	return params.ec
 }
 
 func (params *Parameters) Parties() *PeerContext {
@@ -71,28 +68,28 @@ func (params *Parameters) Threshold() int {
 	return params.threshold
 }
 
+func (params *Parameters) Concurrency() int {
+	return params.concurrency
+}
+
 func (params *Parameters) SafePrimeGenTimeout() time.Duration {
 	return params.safePrimeGenTimeout
 }
 
-// Getter. The H1, H2 dupe check is disabled during some benchmarking scenarios to allow reuse of pre-params.
-func (params *Parameters) UNSAFE_KGIgnoreH1H2Dupes() bool {
-	return params.unsafeKGIgnoreH1H2Dupes
+// The concurrency level must be >= 1.
+func (params *Parameters) SetConcurrency(concurrency int) {
+	params.concurrency = concurrency
 }
 
-// Setter. The H1, H2 dupe check is disabled during some benchmarking scenarios to allow reuse of pre-params.
-func (params *Parameters) UNSAFE_setKGIgnoreH1H2Dupes(unsafeKGIgnoreH1H2Dupes bool) {
-	if unsafeKGIgnoreH1H2Dupes {
-		common.Logger.Warn("UNSAFE_setKGIgnoreH1H2Dupes() has been called; do not use these shares in production.")
-	}
-	params.unsafeKGIgnoreH1H2Dupes = unsafeKGIgnoreH1H2Dupes
+func (params *Parameters) SetSafePrimeGenTimeout(timeout time.Duration) {
+	params.safePrimeGenTimeout = timeout
 }
 
 // ----- //
 
 // Exported, used in `tss` client
-func NewReSharingParameters(ctx, newCtx *PeerContext, partyID *PartyID, partyCount, threshold, newPartyCount, newThreshold int) *ReSharingParameters {
-	params := NewParameters(ctx, partyID, partyCount, threshold)
+func NewReSharingParameters(ec elliptic.Curve, ctx, newCtx *PeerContext, partyID *PartyID, partyCount, threshold, newPartyCount, newThreshold int) *ReSharingParameters {
+	params := NewParameters(ec, ctx, partyID, partyCount, threshold)
 	return &ReSharingParameters{
 		Parameters:    params,
 		newParties:    newCtx,

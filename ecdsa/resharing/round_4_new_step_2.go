@@ -18,6 +18,7 @@ import (
 	"github.com/binance-chain/tss-lib/crypto"
 	"github.com/binance-chain/tss-lib/crypto/commitments"
 	"github.com/binance-chain/tss-lib/crypto/vss"
+	"github.com/binance-chain/tss-lib/ecdsa/keygen"
 	"github.com/binance-chain/tss-lib/tss"
 )
 
@@ -35,6 +36,13 @@ func (round *round4) Start() *tss.Error {
 		// both committees proceed to round 5 after receiving "ACK" messages from the new committee
 		return nil
 	}
+
+	common.Logger.Debugf(
+		"%s Setting up DLN verification with concurrency level of %d",
+		round.PartyID(),
+		round.Concurrency(),
+	)
+	dlnVerifier := keygen.NewDlnProofVerifier(round.Concurrency())
 
 	Pi := round.PartyID()
 	i := Pi.Index
@@ -67,24 +75,26 @@ func (round *round4) Start() *tss.Error {
 		go func(j int, msg tss.ParsedMessage, r2msg1 *DGRound2Message1) {
 			if ok, err := r2msg1.UnmarshalPaillierProof().Verify(paiPK.N, msg.GetFrom().KeyInt(), round.save.ECDSAPub); err != nil || !ok {
 				paiProofCulprits[j] = msg.GetFrom()
-				common.Logger.Warnf("paillier verify failed for party %s", msg.GetFrom(), err)
+				common.Logger.Warningf("paillier verify failed for party %s", msg.GetFrom(), err)
 			}
 			wg.Done()
 		}(j, msg, r2msg1)
-		go func(j int, msg tss.ParsedMessage, r2msg1 *DGRound2Message1, H1j, H2j, NTildej *big.Int) {
-			if dlnProof1, err := r2msg1.UnmarshalDLNProof1(); err != nil || !dlnProof1.Verify(H1j, H2j, NTildej) {
-				dlnProof1FailCulprits[j] = msg.GetFrom()
-				common.Logger.Warnf("dln proof 1 verify failed for party %s", msg.GetFrom(), err)
+		_j := j
+		_msg := msg
+		dlnVerifier.VerifyDLNProof1(r2msg1, H1j, H2j, NTildej, func(isValid bool) {
+			if !isValid {
+				dlnProof1FailCulprits[_j] = _msg.GetFrom()
+				common.Logger.Warningf("dln proof 1 verify failed for party %s", _msg.GetFrom())
 			}
 			wg.Done()
-		}(j, msg, r2msg1, H1j, H2j, NTildej)
-		go func(j int, msg tss.ParsedMessage, r2msg1 *DGRound2Message1, H1j, H2j, NTildej *big.Int) {
-			if dlnProof2, err := r2msg1.UnmarshalDLNProof2(); err != nil || !dlnProof2.Verify(H2j, H1j, NTildej) {
-				dlnProof2FailCulprits[j] = msg.GetFrom()
-				common.Logger.Warnf("dln proof 2 verify failed for party %s", msg.GetFrom(), err)
+		})
+		dlnVerifier.VerifyDLNProof2(r2msg1, H2j, H1j, NTildej, func(isValid bool) {
+			if !isValid {
+				dlnProof2FailCulprits[_j] = _msg.GetFrom()
+				common.Logger.Warningf("dln proof 2 verify failed for party %s", _msg.GetFrom())
 			}
 			wg.Done()
-		}(j, msg, r2msg1, H1j, H2j, NTildej)
+		})
 	}
 	wg.Wait()
 	for _, culprit := range append(append(paiProofCulprits, dlnProof1FailCulprits...), dlnProof2FailCulprits...) {
@@ -107,7 +117,7 @@ func (round *round4) Start() *tss.Error {
 	newXi := big.NewInt(0)
 
 	// 5-9.
-	modQ := common.ModInt(tss.EC().Params().N)
+	modQ := common.ModInt(round.Params().EC().Params().N)
 	vjc := make([][]*crypto.ECPoint, len(round.OldParties().IDs()))
 	for j := 0; j <= len(vjc)-1; j++ { // P1..P_t+1. Ps are indexed from 0 here
 		// 6-7.
@@ -123,7 +133,7 @@ func (round *round4) Start() *tss.Error {
 			// TODO collect culprits and return a list of them as per convention
 			return round.WrapError(errors.New("de-commitment of v_j0..v_jt failed"), round.Parties().IDs()[j])
 		}
-		vj, err := crypto.UnFlattenECPoints(tss.EC(), flatVs)
+		vj, err := crypto.UnFlattenECPoints(round.Params().EC(), flatVs)
 		if err != nil {
 			return round.WrapError(err, round.Parties().IDs()[j])
 		}
@@ -136,7 +146,7 @@ func (round *round4) Start() *tss.Error {
 			ID:        round.PartyID().KeyInt(),
 			Share:     new(big.Int).SetBytes(r3msg1.Share),
 		}
-		if ok := sharej.Verify(round.NewThreshold(), vj); !ok {
+		if ok := sharej.Verify(round.Params().EC(), round.NewThreshold(), vj); !ok {
 			// TODO collect culprits and return a list of them as per convention
 			return round.WrapError(errors.New("share from old committee did not pass Verify()"), round.Parties().IDs()[j])
 		}

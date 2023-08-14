@@ -49,7 +49,7 @@ func NewHashCommitment(secrets ...*big.Int) *HashCommitDecommit {
 }
 
 func NewHashDeCommitmentFromBytes(marshalled [][]byte) HashDeCommitment {
-	return common.ByteSlicesToBigInts(marshalled)
+	return common.MultiBytesToBigInts(marshalled)
 }
 
 func (cmt *HashCommitDecommit) Verify() bool {

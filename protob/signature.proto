@@ -8,15 +8,13 @@ syntax = "proto3";
 
 option go_package = "github.com/binance-chain/tss-lib/common";
 
-message ECPoint {
-    bytes x = 1;
-    bytes y = 2;
-}
-
-message ECSignature {
+/*
+ * Container for output signatures, mostly used for marshalling this data structure to a mobile app
+ */
+message SignatureData {
     bytes signature = 1;
 
-    // Ethereum-style Recovery ID: Used to enable extracting the public key from the signature.
+    // Ethereum-style recovery byte; only the first byte is relevant
     bytes signature_recovery = 2;
 
     // Signature components R, S

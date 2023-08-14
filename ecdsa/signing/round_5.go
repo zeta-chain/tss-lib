@@ -8,14 +8,12 @@ package signing
 
 import (
 	"errors"
-	"math/big"
 
 	errors2 "github.com/pkg/errors"
 
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
 	"github.com/binance-chain/tss-lib/crypto/commitments"
-	"github.com/binance-chain/tss-lib/crypto/zkp"
 	"github.com/binance-chain/tss-lib/tss"
 )
 
@@ -27,81 +25,73 @@ func (round *round5) Start() *tss.Error {
 	round.started = true
 	round.resetOK()
 
-	Pi := round.PartyID()
-	i := Pi.Index
-
-	modN := common.ModInt(tss.EC().Params().N)
-
-	bigR := round.temp.gammaIG
-	deltaI := *round.temp.deltaI
-	deltaSum := &deltaI
-
+	R := round.temp.pointGamma
 	for j, Pj := range round.Parties().IDs() {
-		if j == i {
+		if j == round.PartyID().Index {
 			continue
 		}
 		r1msg2 := round.temp.signRound1Message2s[j].Content().(*SignRound1Message2)
-		r3msg := round.temp.signRound3Messages[j].Content().(*SignRound3Message)
 		r4msg := round.temp.signRound4Messages[j].Content().(*SignRound4Message)
-
-		// calculating Big R
 		SCj, SDj := r1msg2.UnmarshalCommitment(), r4msg.UnmarshalDeCommitment()
 		cmtDeCmt := commitments.HashCommitDecommit{C: SCj, D: SDj}
 		ok, bigGammaJ := cmtDeCmt.DeCommit()
 		if !ok || len(bigGammaJ) != 2 {
 			return round.WrapError(errors.New("commitment verify failed"), Pj)
 		}
-		bigGammaJPoint, err := crypto.NewECPoint(tss.EC(), bigGammaJ[0], bigGammaJ[1])
+		bigGammaJPoint, err := crypto.NewECPoint(round.Params().EC(), bigGammaJ[0], bigGammaJ[1])
 		if err != nil {
 			return round.WrapError(errors2.Wrapf(err, "NewECPoint(bigGammaJ)"), Pj)
 		}
-		round.temp.bigGammaJs[j] = bigGammaJPoint // used for identifying abort in round 7
-		bigR, err = bigR.Add(bigGammaJPoint)
+		proof, err := r4msg.UnmarshalZKProof(round.Params().EC())
 		if err != nil {
-			return round.WrapError(errors2.Wrapf(err, "bigR.Add(bigGammaJ)"), Pj)
+			return round.WrapError(errors.New("failed to unmarshal bigGamma proof"), Pj)
 		}
-
-		// calculating delta^-1 (below)
-		deltaJ := r3msg.GetDeltaI()
-		deltaSum = modN.Add(deltaSum, new(big.Int).SetBytes(deltaJ))
+		ok = proof.Verify(bigGammaJPoint)
+		if !ok {
+			return round.WrapError(errors.New("failed to prove bigGamma"), Pj)
+		}
+		R, err = R.Add(bigGammaJPoint)
+		if err != nil {
+			return round.WrapError(errors2.Wrapf(err, "R.Add(bigGammaJ)"), Pj)
+		}
 	}
 
-	// compute the multiplicative inverse delta mod q
-	deltaInv := modN.Inverse(deltaSum)
+	R = R.ScalarMult(round.temp.thetaInverse)
+	N := round.Params().EC().Params().N
+	modN := common.ModInt(N)
+	rx := R.X()
+	ry := R.Y()
+	si := modN.Add(modN.Mul(round.temp.m, round.temp.k), modN.Mul(rx, round.temp.sigma))
 
-	// compute R and Rdash_i
-	bigR = bigR.ScalarMult(deltaInv)
-	round.temp.BigR = bigR.ToProtobufPoint()
-	r := bigR.X()
+	// clear temp.w and temp.k from memory, lint ignore
+	round.temp.w = zero
+	round.temp.k = zero
 
-	// used in FinalizeGetOurSigShare
-	round.temp.RSigmaI = modN.Mul(r, round.temp.sigmaI).Bytes()
-
-	// all parties broadcast Rdash_i = k_i * R
-	kI := new(big.Int).SetBytes(round.temp.KI)
-	bigRBarI := bigR.ScalarMult(kI)
-
-	// compute ZK proof of consistency between R_i and E_i(k_i)
-	// ported from: https://git.io/Jf69a
-	pdlWSlackStatement := zkp.PDLwSlackStatement{
-		PK:         &round.key.PaillierSK.PublicKey,
-		CipherText: round.temp.cAKI,
-		Q:          bigRBarI,
-		G:          bigR,
-		H1:         round.key.H1i,
-		H2:         round.key.H2i,
-		NTilde:     round.key.NTildei,
+	li := common.GetRandomPositiveInt(N)  // li
+	roI := common.GetRandomPositiveInt(N) // pi
+	rToSi := R.ScalarMult(si)
+	liPoint := crypto.ScalarBaseMult(round.Params().EC(), li)
+	bigAi := crypto.ScalarBaseMult(round.Params().EC(), roI)
+	bigVi, err := rToSi.Add(liPoint)
+	if err != nil {
+		return round.WrapError(errors2.Wrapf(err, "rToSi.Add(li)"))
 	}
-	pdlWSlackWitness := zkp.PDLwSlackWitness{
-		SK: round.key.PaillierSK,
-		X:  kI,
-		R:  round.temp.rAKI,
-	}
-	pdlWSlackPf := zkp.NewPDLwSlackProof(pdlWSlackWitness, pdlWSlackStatement)
 
-	r5msg := NewSignRound5Message(Pi, bigRBarI, &pdlWSlackPf)
-	round.temp.signRound5Messages[i] = r5msg
+	cmt := commitments.NewHashCommitment(bigVi.X(), bigVi.Y(), bigAi.X(), bigAi.Y())
+	r5msg := NewSignRound5Message(round.PartyID(), cmt.C)
+	round.temp.signRound5Messages[round.PartyID().Index] = r5msg
 	round.out <- r5msg
+
+	round.temp.li = li
+	round.temp.bigAi = bigAi
+	round.temp.bigVi = bigVi
+	round.temp.roi = roI
+	round.temp.DPower = cmt.D
+	round.temp.si = si
+	round.temp.rx = rx
+	round.temp.ry = ry
+	round.temp.bigR = R
+
 	return nil
 }
 
@@ -127,5 +117,5 @@ func (round *round5) CanAccept(msg tss.ParsedMessage) bool {
 
 func (round *round5) NextRound() tss.Round {
 	round.started = false
-	return &round6{round, false}
+	return &round6{round}
 }
