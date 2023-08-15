@@ -10,6 +10,7 @@ import (
 	"math/big"
 
 	"github.com/binance-chain/tss-lib/crypto/facproof"
+	"github.com/binance-chain/tss-lib/crypto/modproof"
 
 	"github.com/binance-chain/tss-lib/common"
 	cmt "github.com/binance-chain/tss-lib/crypto/commitments"
@@ -147,14 +148,17 @@ func (m *KGRound2Message1) UnmarshalFacProof() (*facproof.ProofFac, error) {
 func NewKGRound2Message2(
 	from *tss.PartyID,
 	deCommitment cmt.HashDeCommitment,
+	proof *modproof.ProofMod,
 ) tss.ParsedMessage {
 	meta := tss.MessageRouting{
 		From:        from,
 		IsBroadcast: true,
 	}
 	dcBzs := common.BigIntsToBytes(deCommitment)
+	proofBzs := proof.Bytes()
 	content := &KGRound2Message2{
 		DeCommitment: dcBzs,
+		ModProof:     proofBzs[:],
 	}
 	msg := tss.NewMessageWrapper(meta, content)
 	return tss.NewMessage(meta, content, msg)
@@ -163,11 +167,17 @@ func NewKGRound2Message2(
 func (m *KGRound2Message2) ValidateBasic() bool {
 	return m != nil &&
 		common.NonEmptyMultiBytes(m.GetDeCommitment())
+	// This is commented for backward compatibility, which msg has no proof
+	// && common.NonEmptyMultiBytes(m.GetModProof(), modproof.ProofModBytesParts)
 }
 
 func (m *KGRound2Message2) UnmarshalDeCommitment() []*big.Int {
 	deComBzs := m.GetDeCommitment()
 	return cmt.NewHashDeCommitmentFromBytes(deComBzs)
+}
+
+func (m *KGRound2Message2) UnmarshalModProof() (*modproof.ProofMod, error) {
+	return modproof.NewProofFromBytes(m.GetModProof())
 }
 
 // ----- //

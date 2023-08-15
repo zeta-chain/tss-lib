@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	"github.com/binance-chain/tss-lib/crypto/facproof"
+	"github.com/binance-chain/tss-lib/crypto/modproof"
 
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/tss"
@@ -128,7 +129,15 @@ func (round *round2) Start() *tss.Error {
 	}
 
 	// 7. BROADCAST de-commitments of Shamir poly*G
-	r2msg2 := NewKGRound2Message2(round.PartyID(), round.temp.deCommitPolyG)
+	modProof, err := modproof.NewProof(
+		round.save.PaillierSK.N,
+		round.save.PaillierSK.P,
+		round.save.PaillierSK.Q)
+	if err != nil {
+		return round.WrapError(err, round.PartyID())
+	}
+
+	r2msg2 := NewKGRound2Message2(round.PartyID(), round.temp.deCommitPolyG, modProof)
 	round.temp.kgRound2Message2s[i] = r2msg2
 	round.out <- r2msg2
 
