@@ -68,3 +68,7 @@ func (mi *modInt) Sqrt(x *big.Int) *big.Int {
 func (mi *modInt) i() *big.Int {
 	return (*big.Int)(mi)
 }
+
+func IsInInterval(b *big.Int, bound *big.Int) bool {
+	return b.Cmp(bound) == -1 && b.Cmp(zero) >= 0
+}
