@@ -95,6 +95,23 @@ func (pf PDLwSlackProof) Verify(st PDLwSlackStatement) bool {
 	u3TestTmp := commitmentUnknownOrder(st.H1, st.H2, st.NTilde, pf.S1, pf.S3)
 	u3Test := commitmentUnknownOrder(u3TestTmp, pf.Z, st.NTilde, one, eNeg)
 
+	gcd := big.NewInt(0)
+	zero := big.NewInt(0)
+	one := big.NewInt(1)
+
+	if pf.S2.Cmp(zero) == 0 {
+		return false
+	}
+	if gcd.GCD(nil, nil, pf.S2, st.PK.N).Cmp(one) != 0 {
+		return false
+	}
+	if pf.U2.Cmp(zero) == 0 {
+		return false
+	}
+	if gcd.GCD(nil, nil, pf.U2, st.PK.N).Cmp(one) != 0 {
+		return false
+	}
+
 	return pf.U1.Equals(u1Test) &&
 		pf.U2.Cmp(u2Test) == 0 &&
 		pf.U3.Cmp(u3Test) == 0
