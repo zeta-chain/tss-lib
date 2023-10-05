@@ -44,7 +44,9 @@ func ProveBobWC(pk *paillier.PublicKey, NTilde, h1, h2, c1, c2, x, y, r *big.Int
 
 	q := tss.EC().Params().N
 	q3 := new(big.Int).Mul(q, q)
-	q3.Mul(q3, q)
+	q3 = new(big.Int).Mul(q, q3)
+	q7 := new(big.Int).Mul(q3, q3)
+	q7 = new(big.Int).Mul(q7, q)
 	qNTilde := new(big.Int).Mul(q, NTilde)
 	q3NTilde := new(big.Int).Mul(q3, NTilde)
 
@@ -55,14 +57,14 @@ func ProveBobWC(pk *paillier.PublicKey, NTilde, h1, h2, c1, c2, x, y, r *big.Int
 	// 2.
 	rho := common.GetRandomPositiveInt(qNTilde)
 	sigma := common.GetRandomPositiveInt(qNTilde)
-	tau := common.GetRandomPositiveInt(qNTilde)
+	tau := common.GetRandomPositiveInt(q3NTilde)
 
 	// 3.
 	rhoPrm := common.GetRandomPositiveInt(q3NTilde)
 
 	// 4.
 	beta := common.GetRandomPositiveRelativelyPrimeInt(pk.N)
-	gamma := common.GetRandomPositiveRelativelyPrimeInt(pk.N)
+	gamma := common.GetRandomPositiveInt(q7)
 
 	// 5.
 	u := crypto.NewECPointNoCurveCheck(tss.EC(), zero, zero) // initialization suppresses an IDE warning
@@ -191,8 +193,10 @@ func (pf *ProofBobWC) Verify(pk *paillier.PublicKey, NTilde, h1, h2, c1, c2 *big
 	}
 
 	q := tss.EC().Params().N
-	q3 := new(big.Int).Mul(q, q)
-	q3 = new(big.Int).Mul(q, q3)
+	q3 := new(big.Int).Mul(q, q)   // q^2
+	q3 = new(big.Int).Mul(q, q3)   // q^3
+	q7 := new(big.Int).Mul(q3, q3) // q^6
+	q7 = new(big.Int).Mul(q7, q)   // q^7
 
 	if !common.IsInInterval(pf.Z, NTilde) {
 		return false
@@ -243,6 +247,9 @@ func (pf *ProofBobWC) Verify(pk *paillier.PublicKey, NTilde, h1, h2, c1, c2 *big
 	}
 	// 3.
 	if pf.S1.Cmp(q3) > 0 {
+		return false
+	}
+	if pf.T1.Cmp(q7) > 0 {
 		return false
 	}
 
