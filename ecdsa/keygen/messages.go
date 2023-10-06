@@ -15,6 +15,7 @@ import (
 	"github.com/binance-chain/tss-lib/crypto/paillier"
 	"github.com/binance-chain/tss-lib/crypto/vss"
 	"github.com/binance-chain/tss-lib/tss"
+	"github.com/bnb-chain/tss-lib/crypto/facproof"
 )
 
 // These messages were generated from Protocol Buffers definitions into ecdsa-keygen.pb.go
@@ -108,14 +109,17 @@ func (m *KGRound1Message) UnmarshalDLNProof2() (*dlnp.Proof, error) {
 func NewKGRound2Message1(
 	to, from *tss.PartyID,
 	share *vss.Share,
+	proof *facproof.ProofFac,
 ) tss.ParsedMessage {
 	meta := tss.MessageRouting{
 		From:        from,
 		To:          []*tss.PartyID{to},
 		IsBroadcast: false,
 	}
+	proofBzs := proof.Bytes()
 	content := &KGRound2Message1{
-		Share: share.Share.Bytes(),
+		Share:    share.Share.Bytes(),
+		FacProof: proofBzs[:],
 	}
 	msg := tss.NewMessageWrapper(meta, content)
 	return tss.NewMessage(meta, content, msg)
@@ -156,6 +160,10 @@ func (m *KGRound2Message2) ValidateBasic() bool {
 func (m *KGRound2Message2) UnmarshalDeCommitment() []*big.Int {
 	deComBzs := m.GetDeCommitment()
 	return cmt.NewHashDeCommitmentFromBytes(deComBzs)
+}
+
+func (m *KGRound2Message1) UnmarshalFacProof() (*facproof.ProofFac, error) {
+	return facproof.NewProofFromBytes(m.GetFacProof())
 }
 
 // ----- //

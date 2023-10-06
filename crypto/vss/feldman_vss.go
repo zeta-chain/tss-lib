@@ -59,7 +59,6 @@ func CheckIndexes(ec elliptic.Curve, indexes []*big.Int) ([]*big.Int, error) {
 
 // Returns a new array of secret shares created by Shamir's Secret Sharing Algorithm,
 // requiring a minimum number of shares to recreate, of length shares, from the input secret
-//
 func Create(threshold int, secret *big.Int, indexes []*big.Int) (Vs, Shares, error) {
 	if secret == nil || indexes == nil {
 		return nil, nil, fmt.Errorf("vss secret or indexes == nil: %v %v", secret, indexes)
@@ -157,8 +156,8 @@ func samplePolynomial(threshold int, secret *big.Int) []*big.Int {
 
 // Evauluates a polynomial with coefficients such that:
 // evaluatePolynomial([a, b, c, d], x):
-// 		returns a + bx + cx^2 + dx^3
 //
+//	returns a + bx + cx^2 + dx^3
 func evaluatePolynomial(threshold int, v []*big.Int, id *big.Int) (result *big.Int) {
 	q := tss.EC().Params().N
 	modQ := common.ModInt(q)
