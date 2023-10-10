@@ -112,7 +112,7 @@ func (pf *RangeProofAlice) Verify(pk *paillier.PublicKey, NTilde, h1, h2, c *big
 	NSq := new(big.Int).Mul(pk.N, pk.N)
 	q := tss.EC().Params().N
 	q3 := new(big.Int).Mul(q, q)
-	q3.Mul(q3, q)
+	q3 = new(big.Int).Mul(q, q3)
 
 	if !common.IsInInterval(pf.Z, NTilde) {
 		return false

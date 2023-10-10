@@ -4,15 +4,16 @@ go 1.17
 
 require (
 	github.com/agl/ed25519 v0.0.0-20200225211852-fd4d107ace12
+	github.com/bnb-chain/tss-lib v1.5.0
 	github.com/btcsuite/btcd v0.22.0-beta
 	github.com/decred/dcrd/dcrec/edwards/v2 v2.0.0
-	github.com/golang/protobuf v1.4.2
+	github.com/golang/protobuf v1.5.0
 	github.com/hashicorp/go-multierror v1.1.0
 	github.com/ipfs/go-log v1.0.4
 	github.com/otiai10/primes v0.0.0-20180210170552-f6d2a1ba97c4
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.6.1
-	google.golang.org/protobuf v1.25.0
+	google.golang.org/protobuf v1.27.1
 )
 
 require (
