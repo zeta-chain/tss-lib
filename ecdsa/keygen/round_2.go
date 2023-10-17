@@ -12,8 +12,8 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/binance-chain/tss-lib/tss"
 	"github.com/bnb-chain/tss-lib/crypto/facproof"
+	"github.com/zeta-chain/tss-lib-thor/tss"
 )
 
 const (

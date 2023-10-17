@@ -9,11 +9,11 @@ package resharing
 import (
 	"math/big"
 
-	"github.com/binance-chain/tss-lib/common"
-	"github.com/binance-chain/tss-lib/crypto"
-	cmt "github.com/binance-chain/tss-lib/crypto/commitments"
-	"github.com/binance-chain/tss-lib/crypto/vss"
-	"github.com/binance-chain/tss-lib/tss"
+	"github.com/zeta-chain/tss-lib-thor/common"
+	"github.com/zeta-chain/tss-lib-thor/crypto"
+	cmt "github.com/zeta-chain/tss-lib-thor/crypto/commitments"
+	"github.com/zeta-chain/tss-lib-thor/crypto/vss"
+	"github.com/zeta-chain/tss-lib-thor/tss"
 )
 
 // These messages were generated from Protocol Buffers definitions into eddsa-resharing.pb.go

@@ -11,7 +11,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/binance-chain/tss-lib/common"
+	"github.com/zeta-chain/tss-lib-thor/common"
 )
 
 func TestRejectionSample(t *testing.T) {

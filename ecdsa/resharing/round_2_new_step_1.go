@@ -9,9 +9,9 @@ package resharing
 import (
 	"errors"
 
-	"github.com/binance-chain/tss-lib/crypto/dlnp"
-	"github.com/binance-chain/tss-lib/ecdsa/keygen"
-	"github.com/binance-chain/tss-lib/tss"
+	"github.com/zeta-chain/tss-lib-thor/crypto/dlnp"
+	"github.com/zeta-chain/tss-lib-thor/ecdsa/keygen"
+	"github.com/zeta-chain/tss-lib-thor/tss"
 )
 
 func (round *round2) Start() *tss.Error {

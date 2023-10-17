@@ -10,12 +10,12 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/binance-chain/tss-lib/crypto"
-	"github.com/binance-chain/tss-lib/crypto/commitments"
-	"github.com/binance-chain/tss-lib/crypto/vss"
-	"github.com/binance-chain/tss-lib/eddsa/keygen"
-	"github.com/binance-chain/tss-lib/eddsa/signing"
-	"github.com/binance-chain/tss-lib/tss"
+	"github.com/zeta-chain/tss-lib-thor/crypto"
+	"github.com/zeta-chain/tss-lib-thor/crypto/commitments"
+	"github.com/zeta-chain/tss-lib-thor/crypto/vss"
+	"github.com/zeta-chain/tss-lib-thor/eddsa/keygen"
+	"github.com/zeta-chain/tss-lib-thor/eddsa/signing"
+	"github.com/zeta-chain/tss-lib-thor/tss"
 )
 
 // round 1 represents round 1 of the keygen part of the EDDSA TSS spec

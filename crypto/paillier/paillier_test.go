@@ -13,10 +13,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/binance-chain/tss-lib/common"
-	"github.com/binance-chain/tss-lib/crypto"
-	. "github.com/binance-chain/tss-lib/crypto/paillier"
-	"github.com/binance-chain/tss-lib/tss"
+	"github.com/zeta-chain/tss-lib-thor/common"
+	"github.com/zeta-chain/tss-lib-thor/crypto"
+	. "github.com/zeta-chain/tss-lib-thor/crypto/paillier"
+	"github.com/zeta-chain/tss-lib-thor/tss"
 )
 
 // Using a modulus length of 2048 is recommended in the GG18 spec

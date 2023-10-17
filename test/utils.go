@@ -7,7 +7,7 @@
 package test
 
 import (
-	"github.com/binance-chain/tss-lib/tss"
+	"github.com/zeta-chain/tss-lib-thor/tss"
 )
 
 func SharedPartyUpdater(party tss.Party, msg tss.Message, errCh chan<- *tss.Error) {
