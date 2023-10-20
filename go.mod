@@ -1,4 +1,4 @@
-module github.com/binance-chain/tss-lib
+module github.com/zeta-chain/tss-lib-thor
 
 go 1.17
 

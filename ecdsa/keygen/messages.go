@@ -9,13 +9,13 @@ package keygen
 import (
 	"math/big"
 
-	"github.com/binance-chain/tss-lib/common"
-	cmt "github.com/binance-chain/tss-lib/crypto/commitments"
-	"github.com/binance-chain/tss-lib/crypto/dlnp"
-	"github.com/binance-chain/tss-lib/crypto/paillier"
-	"github.com/binance-chain/tss-lib/crypto/vss"
-	"github.com/binance-chain/tss-lib/tss"
 	"github.com/bnb-chain/tss-lib/crypto/facproof"
+	"github.com/zeta-chain/tss-lib-thor/common"
+	cmt "github.com/zeta-chain/tss-lib-thor/crypto/commitments"
+	"github.com/zeta-chain/tss-lib-thor/crypto/dlnp"
+	"github.com/zeta-chain/tss-lib-thor/crypto/paillier"
+	"github.com/zeta-chain/tss-lib-thor/crypto/vss"
+	"github.com/zeta-chain/tss-lib-thor/tss"
 )
 
 // These messages were generated from Protocol Buffers definitions into ecdsa-keygen.pb.go

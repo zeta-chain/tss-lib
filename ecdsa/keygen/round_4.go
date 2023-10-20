@@ -9,9 +9,9 @@ package keygen
 import (
 	"errors"
 
-	"github.com/binance-chain/tss-lib/common"
-	"github.com/binance-chain/tss-lib/crypto/paillier"
-	"github.com/binance-chain/tss-lib/tss"
+	"github.com/zeta-chain/tss-lib-thor/common"
+	"github.com/zeta-chain/tss-lib-thor/crypto/paillier"
+	"github.com/zeta-chain/tss-lib-thor/tss"
 )
 
 func (round *round4) Start() *tss.Error {

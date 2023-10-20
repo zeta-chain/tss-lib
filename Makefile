@@ -1,4 +1,4 @@
-MODULE = github.com/binance-chain/tss-lib
+MODULE = github.com/zeta-chain/tss-lib-thor
 PACKAGES = $(shell go list ./... | grep -v '/vendor/')
 
 all: protob test
