@@ -18,8 +18,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/zeta-chain/tss-lib-thor/test"
-	"github.com/zeta-chain/tss-lib-thor/tss"
+	"github.com/zeta-chain/tss-lib/test"
+	"github.com/zeta-chain/tss-lib/tss"
 )
 
 const (

@@ -12,8 +12,8 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/zeta-chain/tss-lib-thor/common"
-	"github.com/zeta-chain/tss-lib-thor/crypto/paillier"
+	"github.com/zeta-chain/tss-lib/common"
+	"github.com/zeta-chain/tss-lib/crypto/paillier"
 )
 
 const (

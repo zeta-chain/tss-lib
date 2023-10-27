@@ -10,12 +10,12 @@ import (
 	"math/big"
 
 	"github.com/bnb-chain/tss-lib/crypto/facproof"
-	"github.com/zeta-chain/tss-lib-thor/common"
-	cmt "github.com/zeta-chain/tss-lib-thor/crypto/commitments"
-	"github.com/zeta-chain/tss-lib-thor/crypto/dlnp"
-	"github.com/zeta-chain/tss-lib-thor/crypto/paillier"
-	"github.com/zeta-chain/tss-lib-thor/crypto/vss"
-	"github.com/zeta-chain/tss-lib-thor/tss"
+	"github.com/zeta-chain/tss-lib/common"
+	cmt "github.com/zeta-chain/tss-lib/crypto/commitments"
+	"github.com/zeta-chain/tss-lib/crypto/dlnp"
+	"github.com/zeta-chain/tss-lib/crypto/paillier"
+	"github.com/zeta-chain/tss-lib/crypto/vss"
+	"github.com/zeta-chain/tss-lib/tss"
 )
 
 // These messages were generated from Protocol Buffers definitions into ecdsa-keygen.pb.go

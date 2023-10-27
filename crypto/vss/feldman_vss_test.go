@@ -12,9 +12,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/zeta-chain/tss-lib-thor/common"
-	. "github.com/zeta-chain/tss-lib-thor/crypto/vss"
-	"github.com/zeta-chain/tss-lib-thor/tss"
+	"github.com/zeta-chain/tss-lib/common"
+	. "github.com/zeta-chain/tss-lib/crypto/vss"
+	"github.com/zeta-chain/tss-lib/tss"
 )
 
 func TestCheckIndexesDup(t *testing.T) {

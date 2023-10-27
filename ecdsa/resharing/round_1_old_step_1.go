@@ -10,12 +10,12 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/zeta-chain/tss-lib-thor/crypto"
-	"github.com/zeta-chain/tss-lib-thor/crypto/commitments"
-	"github.com/zeta-chain/tss-lib-thor/crypto/vss"
-	"github.com/zeta-chain/tss-lib-thor/ecdsa/keygen"
-	"github.com/zeta-chain/tss-lib-thor/ecdsa/signing"
-	"github.com/zeta-chain/tss-lib-thor/tss"
+	"github.com/zeta-chain/tss-lib/crypto"
+	"github.com/zeta-chain/tss-lib/crypto/commitments"
+	"github.com/zeta-chain/tss-lib/crypto/vss"
+	"github.com/zeta-chain/tss-lib/ecdsa/keygen"
+	"github.com/zeta-chain/tss-lib/ecdsa/signing"
+	"github.com/zeta-chain/tss-lib/tss"
 )
 
 // round 1 represents round 1 of the keygen part of the GG18 ECDSA TSS spec (Gennaro, Goldfeder; 2018)

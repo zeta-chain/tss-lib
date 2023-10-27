@@ -16,7 +16,7 @@ import (
 
 	"github.com/btcsuite/btcd/btcec"
 
-	"github.com/zeta-chain/tss-lib-thor/common"
+	"github.com/zeta-chain/tss-lib/common"
 )
 
 var (
