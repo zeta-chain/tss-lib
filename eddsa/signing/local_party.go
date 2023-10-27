@@ -11,11 +11,11 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/zeta-chain/tss-lib-thor/common"
-	"github.com/zeta-chain/tss-lib-thor/crypto"
-	cmt "github.com/zeta-chain/tss-lib-thor/crypto/commitments"
-	"github.com/zeta-chain/tss-lib-thor/eddsa/keygen"
-	"github.com/zeta-chain/tss-lib-thor/tss"
+	"github.com/zeta-chain/tss-lib/common"
+	"github.com/zeta-chain/tss-lib/crypto"
+	cmt "github.com/zeta-chain/tss-lib/crypto/commitments"
+	"github.com/zeta-chain/tss-lib/eddsa/keygen"
+	"github.com/zeta-chain/tss-lib/tss"
 )
 
 // Implements Party

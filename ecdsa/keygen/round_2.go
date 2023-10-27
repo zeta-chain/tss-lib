@@ -13,7 +13,7 @@ import (
 	"sync"
 
 	"github.com/bnb-chain/tss-lib/crypto/facproof"
-	"github.com/zeta-chain/tss-lib-thor/tss"
+	"github.com/zeta-chain/tss-lib/tss"
 )
 
 const (

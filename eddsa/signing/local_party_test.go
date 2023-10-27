@@ -17,10 +17,10 @@ import (
 	"github.com/ipfs/go-log"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/zeta-chain/tss-lib-thor/common"
-	"github.com/zeta-chain/tss-lib-thor/eddsa/keygen"
-	"github.com/zeta-chain/tss-lib-thor/test"
-	"github.com/zeta-chain/tss-lib-thor/tss"
+	"github.com/zeta-chain/tss-lib/common"
+	"github.com/zeta-chain/tss-lib/eddsa/keygen"
+	"github.com/zeta-chain/tss-lib/test"
+	"github.com/zeta-chain/tss-lib/tss"
 )
 
 const (

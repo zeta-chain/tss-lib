@@ -9,7 +9,7 @@ package signing
 import (
 	"errors"
 
-	"github.com/zeta-chain/tss-lib-thor/tss"
+	"github.com/zeta-chain/tss-lib/tss"
 )
 
 func (round *round4) Start() *tss.Error {

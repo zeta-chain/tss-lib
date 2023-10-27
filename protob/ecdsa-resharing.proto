@@ -6,7 +6,7 @@
 
 syntax = "proto3";
 
-option go_package = "github.com/zeta-chain/tss-lib-thor/ecdsa/resharing";
+option go_package = "github.com/zeta-chain/tss-lib/ecdsa/resharing";
 
 import "protob/shared.proto";
 

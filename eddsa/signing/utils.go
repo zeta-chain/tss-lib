@@ -11,8 +11,8 @@ import (
 
 	"github.com/agl/ed25519/edwards25519"
 
-	"github.com/zeta-chain/tss-lib-thor/common"
-	"github.com/zeta-chain/tss-lib-thor/tss"
+	"github.com/zeta-chain/tss-lib/common"
+	"github.com/zeta-chain/tss-lib/tss"
 )
 
 func encodedBytesToBigInt(s *[32]byte) *big.Int {

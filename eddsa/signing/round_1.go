@@ -10,11 +10,11 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/zeta-chain/tss-lib-thor/common"
-	"github.com/zeta-chain/tss-lib-thor/crypto"
-	"github.com/zeta-chain/tss-lib-thor/crypto/commitments"
-	"github.com/zeta-chain/tss-lib-thor/eddsa/keygen"
-	"github.com/zeta-chain/tss-lib-thor/tss"
+	"github.com/zeta-chain/tss-lib/common"
+	"github.com/zeta-chain/tss-lib/crypto"
+	"github.com/zeta-chain/tss-lib/crypto/commitments"
+	"github.com/zeta-chain/tss-lib/eddsa/keygen"
+	"github.com/zeta-chain/tss-lib/tss"
 )
 
 // round 1 represents round 1 of the signing part of the EDDSA TSS spec

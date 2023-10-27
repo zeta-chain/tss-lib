@@ -10,12 +10,12 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/zeta-chain/tss-lib-thor/common"
-	"github.com/zeta-chain/tss-lib-thor/crypto"
-	cmt "github.com/zeta-chain/tss-lib-thor/crypto/commitments"
-	"github.com/zeta-chain/tss-lib-thor/crypto/mta"
-	"github.com/zeta-chain/tss-lib-thor/crypto/zkp"
-	"github.com/zeta-chain/tss-lib-thor/tss"
+	"github.com/zeta-chain/tss-lib/common"
+	"github.com/zeta-chain/tss-lib/crypto"
+	cmt "github.com/zeta-chain/tss-lib/crypto/commitments"
+	"github.com/zeta-chain/tss-lib/crypto/mta"
+	"github.com/zeta-chain/tss-lib/crypto/zkp"
+	"github.com/zeta-chain/tss-lib/tss"
 )
 
 // These messages were generated from Protocol Buffers definitions into ecdsa-signing.pb.go

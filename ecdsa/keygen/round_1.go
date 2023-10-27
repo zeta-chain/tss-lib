@@ -10,12 +10,12 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/zeta-chain/tss-lib-thor/common"
-	"github.com/zeta-chain/tss-lib-thor/crypto"
-	cmts "github.com/zeta-chain/tss-lib-thor/crypto/commitments"
-	"github.com/zeta-chain/tss-lib-thor/crypto/dlnp"
-	"github.com/zeta-chain/tss-lib-thor/crypto/vss"
-	"github.com/zeta-chain/tss-lib-thor/tss"
+	"github.com/zeta-chain/tss-lib/common"
+	"github.com/zeta-chain/tss-lib/crypto"
+	cmts "github.com/zeta-chain/tss-lib/crypto/commitments"
+	"github.com/zeta-chain/tss-lib/crypto/dlnp"
+	"github.com/zeta-chain/tss-lib/crypto/vss"
+	"github.com/zeta-chain/tss-lib/tss"
 )
 
 var (

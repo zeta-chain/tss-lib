@@ -11,10 +11,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/zeta-chain/tss-lib-thor/common"
-	"github.com/zeta-chain/tss-lib-thor/crypto"
-	. "github.com/zeta-chain/tss-lib-thor/crypto/zkp"
-	"github.com/zeta-chain/tss-lib-thor/tss"
+	"github.com/zeta-chain/tss-lib/common"
+	"github.com/zeta-chain/tss-lib/crypto"
+	. "github.com/zeta-chain/tss-lib/crypto/zkp"
+	"github.com/zeta-chain/tss-lib/tss"
 )
 
 func TestSchnorrProof(t *testing.T) {

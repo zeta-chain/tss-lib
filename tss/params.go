@@ -10,7 +10,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/zeta-chain/tss-lib-thor/common"
+	"github.com/zeta-chain/tss-lib/common"
 )
 
 type (

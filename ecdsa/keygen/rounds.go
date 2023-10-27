@@ -7,7 +7,7 @@
 package keygen
 
 import (
-	"github.com/zeta-chain/tss-lib-thor/tss"
+	"github.com/zeta-chain/tss-lib/tss"
 )
 
 const (

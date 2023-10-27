@@ -7,8 +7,8 @@
 package signing
 
 import (
-	"github.com/zeta-chain/tss-lib-thor/eddsa/keygen"
-	"github.com/zeta-chain/tss-lib-thor/tss"
+	"github.com/zeta-chain/tss-lib/eddsa/keygen"
+	"github.com/zeta-chain/tss-lib/tss"
 )
 
 const (

@@ -6,7 +6,7 @@
 
 syntax = "proto3";
 
-option go_package = "github.com/zeta-chain/tss-lib-thor/eddsa/keygen";
+option go_package = "github.com/zeta-chain/tss-lib/eddsa/keygen";
 
 import "protob/shared.proto";
 

@@ -13,11 +13,11 @@ import (
 
 	errorspkg "github.com/pkg/errors"
 
-	"github.com/zeta-chain/tss-lib-thor/common"
-	"github.com/zeta-chain/tss-lib-thor/crypto"
-	"github.com/zeta-chain/tss-lib-thor/crypto/mta"
-	"github.com/zeta-chain/tss-lib-thor/crypto/zkp"
-	"github.com/zeta-chain/tss-lib-thor/tss"
+	"github.com/zeta-chain/tss-lib/common"
+	"github.com/zeta-chain/tss-lib/crypto"
+	"github.com/zeta-chain/tss-lib/crypto/mta"
+	"github.com/zeta-chain/tss-lib/crypto/zkp"
+	"github.com/zeta-chain/tss-lib/tss"
 )
 
 func (round *round3) Start() *tss.Error {

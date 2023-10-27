@@ -12,7 +12,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/zeta-chain/tss-lib-thor/common"
+	"github.com/zeta-chain/tss-lib/common"
 )
 
 const (

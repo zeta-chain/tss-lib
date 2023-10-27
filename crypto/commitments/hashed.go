@@ -12,7 +12,7 @@ package commitments
 import (
 	"math/big"
 
-	"github.com/zeta-chain/tss-lib-thor/common"
+	"github.com/zeta-chain/tss-lib/common"
 )
 
 const (

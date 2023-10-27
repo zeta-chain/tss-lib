@@ -12,8 +12,8 @@ import (
 
 	errorspkg "github.com/pkg/errors"
 
-	"github.com/zeta-chain/tss-lib-thor/crypto/mta"
-	"github.com/zeta-chain/tss-lib-thor/tss"
+	"github.com/zeta-chain/tss-lib/crypto/mta"
+	"github.com/zeta-chain/tss-lib/tss"
 )
 
 func (round *round2) Start() *tss.Error {

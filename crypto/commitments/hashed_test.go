@@ -11,8 +11,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	. "github.com/zeta-chain/tss-lib-thor/crypto/commitments"
+	. "github.com/zeta-chain/tss-lib/crypto/commitments"
 )
 
 func TestCreateVerify(t *testing.T) {

@@ -6,7 +6,7 @@
 
 syntax = "proto3";
 
-option go_package = "github.com/zeta-chain/tss-lib-thor/common";
+option go_package = "github.com/zeta-chain/tss-lib/common";
 
 message ECPoint {
     bytes x = 1;
