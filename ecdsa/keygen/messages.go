@@ -9,10 +9,10 @@ package keygen
 import (
 	"math/big"
 
-	"github.com/bnb-chain/tss-lib/crypto/facproof"
 	"github.com/zeta-chain/tss-lib/common"
 	cmt "github.com/zeta-chain/tss-lib/crypto/commitments"
 	"github.com/zeta-chain/tss-lib/crypto/dlnp"
+	"github.com/zeta-chain/tss-lib/crypto/facproof"
 	"github.com/zeta-chain/tss-lib/crypto/paillier"
 	"github.com/zeta-chain/tss-lib/crypto/vss"
 	"github.com/zeta-chain/tss-lib/tss"

@@ -12,7 +12,7 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/bnb-chain/tss-lib/crypto/facproof"
+	"github.com/zeta-chain/tss-lib/crypto/facproof"
 	"github.com/zeta-chain/tss-lib/tss"
 )
 
