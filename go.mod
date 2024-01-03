@@ -4,7 +4,6 @@ go 1.17
 
 require (
 	github.com/agl/ed25519 v0.0.0-20200225211852-fd4d107ace12
-	github.com/bnb-chain/tss-lib v1.5.0
 	github.com/btcsuite/btcd v0.22.0-beta
 	github.com/decred/dcrd/dcrec/edwards/v2 v2.0.0
 	github.com/golang/protobuf v1.5.0
