@@ -45,6 +45,7 @@ func ProveBobWC(ec elliptic.Curve, pk *paillier.PublicKey, NTilde, h1, h2, c1, c
 	q := ec.Params().N
 	q3 := new(big.Int).Mul(q, q)
 	q3 = new(big.Int).Mul(q, q3)
+	q7 := new(big.Int).Exp(q, big.NewInt(7), nil)
 	qNTilde := new(big.Int).Mul(q, NTilde)
 	q3NTilde := new(big.Int).Mul(q3, NTilde)
 
@@ -62,7 +63,9 @@ func ProveBobWC(ec elliptic.Curve, pk *paillier.PublicKey, NTilde, h1, h2, c1, c
 
 	// 4.
 	beta := common.GetRandomPositiveRelativelyPrimeInt(pk.N)
-	gamma := common.GetRandomPositiveRelativelyPrimeInt(pk.N)
+	// gamma is drawn from [0, q^7) so that t1 = e*y + gamma stays under q^7
+	// (see ProofBobWC.Verify's q^7 upper bound on T1).
+	gamma := common.GetRandomPositiveInt(q7)
 
 	// 5.
 	u := crypto.NewECPointNoCurveCheck(ec, zero, zero) // initialization suppresses an IDE warning
@@ -191,6 +194,7 @@ func (pf *ProofBobWC) Verify(ec elliptic.Curve, pk *paillier.PublicKey, NTilde, 
 	q := ec.Params().N
 	q3 := new(big.Int).Mul(q, q)
 	q3 = new(big.Int).Mul(q, q3)
+	q7 := new(big.Int).Exp(q, big.NewInt(7), nil)
 
 	gcd := big.NewInt(0)
 	if pf.S.Cmp(zero) == 0 {
@@ -208,6 +212,21 @@ func (pf *ProofBobWC) Verify(ec elliptic.Curve, pk *paillier.PublicKey, NTilde, 
 
 	// 3.
 	if pf.S1.Cmp(q3) > 0 {
+		return false
+	}
+	if pf.S1.Cmp(q) == -1 {
+		return false
+	}
+	if pf.S2.Cmp(q) == -1 {
+		return false
+	}
+	if pf.T1.Cmp(q) == -1 {
+		return false
+	}
+	if pf.T2.Cmp(q) == -1 {
+		return false
+	}
+	if pf.T1.Cmp(q7) > 0 {
 		return false
 	}
 
