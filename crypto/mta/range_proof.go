@@ -113,6 +113,12 @@ func (pf *RangeProofAlice) Verify(ec elliptic.Curve, pk *paillier.PublicKey, NTi
 	if pf.S1.Cmp(q3) == 1 {
 		return false
 	}
+	if pf.S1.Cmp(q) == -1 {
+		return false
+	}
+	if pf.S2.Cmp(q) == -1 {
+		return false
+	}
 
 	// 1-2. e'
 	e := common.HashToN(q, append(pk.AsInts(), c, pf.Z, pf.U, pf.W)...)
